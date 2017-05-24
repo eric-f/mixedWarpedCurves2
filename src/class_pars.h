@@ -27,7 +27,7 @@ public:
 
   // Dimension
   int dim_a;
-  int dim_w;
+  int dim_w; // dim_w - 1 = dimension of kappa;
   int dim_alpha;
 
   // Auxiliary variables
@@ -36,8 +36,9 @@ public:
   int f_order;                 // order of the base curve spline
   arma::vec f_full_knots;      // (repeated) knot locations of the base curve
   RcppGSL::Vector f_break_points;    // boundary and internal knot locations of the base curve
-  int D;                       // (dim_w - 1) - dimension of kappa
-  arma::mat chol_centering_mat; // D x (D-1), Cholesky decomposition of the I - 1/D * J matrix.
+  double f_left_bound;
+  double f_right_bound;
+  arma::mat chol_centering_mat; // (dim_w - 1) x (dim_w - 2), Cholesky decomposition of the I - 1/(dim_w - 1) * J matrix.
   arma::mat identity_cor_mat; // dim_z x dim_z identity matrix (dim_z = dim_w - 2)
 
   // SA-MCMC settings
@@ -70,6 +71,8 @@ public:
   void post_simulation_housekeeping();
   void update_parameter_estimates(std::vector<Curve>* mydata);
   void advance_iteration_counter();
+  void print_estimates(int interval);
+  Rcpp::List return_list();
 };
 
 #endif

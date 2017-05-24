@@ -77,7 +77,7 @@ Pars::Pars(Rcpp::List pars_list,
   // Iteration counter
   saem_counter = 0;
 
-  Rcpp::Rcout << "Importing model parameters" << std::endl;
+  // Rcpp::Rcout << "Importing model parameters" << std::endl;
 
   // Model Parameters
   alpha = Rcpp::as<arma::vec>(pars_list["alp"]);
@@ -92,7 +92,7 @@ Pars::Pars(Rcpp::List pars_list,
   dim_w = kappa.size() + 1;
   dim_alpha = alpha.size();
 
-  Rcpp::Rcout << "Importing auxiliary variables" << std::endl;
+  // Rcpp::Rcout << "Importing auxiliary variables" << std::endl;
 
   // Auxiliary variables
   n_total = Rcpp::as<int>(aux["n_total"]);
@@ -100,12 +100,13 @@ Pars::Pars(Rcpp::List pars_list,
   f_order = Rcpp::as<int>(aux["f_order"]);
   f_full_knots = Rcpp::as<arma::vec>(aux["f_full_knots"]);
   // f_break_points = Rcpp::as<RcppGSL::Vector>(aux["f_break_points"]); // Need to explicitly initiate above
+  f_left_bound = gsl_vector_min(f_break_points);
+  f_right_bound = gsl_vector_max(f_break_points);
   big_sigma_inverse = Rcpp::as<arma::mat>(aux["Sigma_inv"]);
-  D = Rcpp::as<int>(aux["D"]);
   chol_centering_mat = Rcpp::as<arma::mat>(aux["L"]); // chol_centering_mat
-  identity_cor_mat = arma::eye(D - 1, D - 1);
+  identity_cor_mat = arma::eye(dim_w - 2, dim_w - 2);
 
-  Rcpp::Rcout << "Importing control variables" << std::endl;
+  // Rcpp::Rcout << "Importing control variables" << std::endl;
 
   // SA-MCMC Control parameters
   n_burn_saem = Rcpp::as<int>(control_list["nBurnSAEM"]);
@@ -150,20 +151,23 @@ void Pars::post_simulation_housekeeping(){
   if(mh_accept_rate_history_counter < mh_accept_rate_history_counter_ncol){
     mh_accept_rate_history(mh_accept_rate_history_counter) =
       arma::mean(mh_accept_rate_table.col(mh_accept_rate_table_counter)) / n_curve / n_burn_mcmc;
-    // Calibrate proposal
-    if((saem_counter < calibrate_period) && (mh_accept_rate_table_counter % mh_accept_rates_table_ncol == mh_accept_rates_table_ncol-1)){
-      tmp_accept_rate = accu(mh_accept_rate_table);
-      tmp_accept_rate = tmp_accept_rate / mh_accept_rates_table_ncol / n_curve / n_burn_mcmc;
-      if(tmp_accept_rate < mh_accept_rate_lb){
-        proposal_sigma /= 2;
-      }
-      if(tmp_accept_rate > mh_accept_rate_ub){
-        proposal_sigma *= 2;
-      }
-      Rcpp::Rcout << "New proposal sigma: " << proposal_sigma << std::endl;
-    }
 
-    // Move counters
+    // Table is full, calibrate and reset tallies (TO-DO: print and check table)
+    if((mh_accept_rate_table_counter % mh_accept_rates_table_ncol) == (mh_accept_rates_table_ncol - 1)){
+      // Calibrate if still adapting
+      if(saem_counter < calibrate_period){
+        tmp_accept_rate = accu(mh_accept_rate_table) / mh_accept_rate_table.n_cols / mh_accept_rate_table.n_rows / n_burn_mcmc;
+        if(tmp_accept_rate < mh_accept_rate_lb){
+          proposal_sigma /= 2;
+        }
+        if(tmp_accept_rate > mh_accept_rate_ub){
+          proposal_sigma *= 2;
+        }
+      }
+      // Reset tallies
+      mh_accept_rate_table = arma::zeros(n_curve, mh_accept_rates_table_ncol);
+    }
+    // Advance counters
     ++mh_accept_rate_history_counter;
     mh_accept_rate_table_counter = (mh_accept_rate_table_counter + 1) % mh_accept_rates_table_ncol;
     return;
@@ -195,29 +199,20 @@ void Pars::update_parameter_estimates(std::vector<Curve>* mydata){
     tmp_sum_log_dw += it->sapprox_log_dw;
   }
 
-  Rcpp::Rcout << std::endl;
-  Rcpp::Rcout << std::endl;
-  Rcpp::Rcout << "Iteration: " << std::endl << saem_counter << std::endl;
-
   // Update big_sigma
   big_sigma = tmp_mean_sigma_a;
   big_sigma_inverse = arma::inv_sympd(big_sigma);
-  Rcpp::Rcout << "big_sigma: " << std::endl << big_sigma << std::endl;
 
   // Update alpha
   tmp_mean_hat_By = tmp_mean_hat_mat(arma::span(1, dim_alpha), arma::span(0, 0));
   tmp_mean_hat_BB = tmp_mean_hat_mat(arma::span(1, dim_alpha), arma::span(1, dim_alpha));
   alpha = arma::solve(tmp_mean_hat_BB, tmp_mean_hat_By);
-  Rcpp::Rcout << "alpha: " << std::endl << alpha << std::endl;
 
   // Update sigma2
   tmp_alpha_aug(arma::span(1, dim_alpha)) = alpha;
   sigma2 = arma::as_scalar(tmp_alpha_aug.t() * tmp_mean_hat_mat * tmp_alpha_aug * n_curve / n_total);
-  Rcpp::Rcout << "sigma2: " << std::endl << sigma2 << std::endl;
 
   // Update tau (by Newton-Raphson)
-  // Rcpp::Rcout << "tau" << std::endl;
-  // Rcpp::Rcout << "old tau: " << tau << std::endl;
   tmp_log_tau = std::log(tau);
   for (int i = 0; i < newton_max_iter; i++) {
     newton_workspace = nllk_dirichlet_rcpp(tmp_log_tau, tmp_sum_log_dw, n_curve, kappa);
@@ -226,11 +221,8 @@ void Pars::update_parameter_estimates(std::vector<Curve>* mydata){
     if(std::abs(newton_update_step) < 1e-6) break; // convergence by step-size
   }
   tau = std::exp(tmp_log_tau);
-  // check nan
-  // if(tau != tau) {
-  //   tau = 10;
-  // }
-  Rcpp::Rcout << "new tau: " << tau << std::endl;
+  if(tau != tau) throw("estimate of tau blown up..."); // convergence by step-size
+
 }
 
 
@@ -239,3 +231,31 @@ void Pars::update_parameter_estimates(std::vector<Curve>* mydata){
 void Pars::advance_iteration_counter(){
   ++saem_counter;
 }
+
+
+
+// Print estimates for monitoring
+void Pars::print_estimates(int interval){
+  if(saem_counter % interval == 0){
+    Rcpp::Rcout << "=================================" << std::endl;
+    Rcpp::Rcout << "Iteration: " << std::endl << saem_counter << std::endl;
+    Rcpp::Rcout << "Acceptance rate: " << mh_accept_rate_history(mh_accept_rate_history_counter-1) << std::endl;
+    Rcpp::Rcout << "Proposal sigma: " << proposal_sigma << std::endl;
+    Rcpp::Rcout << "big_sigma: " << arma::vectorise(big_sigma).t() << std::endl;
+    Rcpp::Rcout << "alpha: " << alpha.t() << std::endl;
+    Rcpp::Rcout << "sigma2: " << sigma2 << std::endl;
+    Rcpp::Rcout << "new tau: " << tau << std::endl;
+    Rcpp::Rcout << "=================================" << std::endl;
+  }
+}
+
+
+
+Rcpp::List Pars::return_list(){
+  return Rcpp::List::create(
+    Rcpp::Named("alpha", Rcpp::wrap(alpha)),
+    Rcpp::Named("sigma2", Rcpp::wrap(sigma2)),
+    Rcpp::Named("big_sigma", Rcpp::wrap(big_sigma)),
+    Rcpp::Named("tau", Rcpp::wrap(tau))
+  );
+};

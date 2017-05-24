@@ -6,6 +6,6 @@ test_oopc1 <- function(curve_list, pars_list, control_list) {
 }
 
 test_oopc <- function(curve_list, pars_list, control_list) {
-    invisible(.Call('mixedWarpedCurves2_test_oopc', PACKAGE = 'mixedWarpedCurves2', curve_list, pars_list, control_list))
+    .Call('mixedWarpedCurves2_test_oopc', PACKAGE = 'mixedWarpedCurves2', curve_list, pars_list, control_list)
 }
 

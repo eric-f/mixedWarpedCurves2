@@ -68,6 +68,7 @@ public:
   void do_simulation_step();
   void center_current_a();
   void update_sufficient_statistics_approximates();
+  Rcpp::List return_list();
 
 private:
   void propose_new_w();

@@ -1,8 +1,24 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadillo.h>
+// [[Rcpp::depends(RcppGSL)]]
+#include <RcppGSL.h>
 #include <gsl/gsl_bspline.h>
 #include "class_pars.h"
 #include "class_curve.h"
+
+void squish(arma::vec *x, double left_bound, double right_bound) {
+  int n = x->size();
+
+  for (int i = 0; i < n; ++i) {
+    if (x->at(i) < left_bound) {
+      x->at(i) = left_bound;
+    } else if (x->at(i) > right_bound) {
+      x->at(i) = right_bound;
+    }
+  }
+  return;
+}
+
 
 
 double compute_llk_dw(arma::vec dw, arma::vec tau_kappa) {
@@ -51,12 +67,12 @@ Curve::Curve(Rcpp::List curve_obj, Pars* pars, int id) : curve_id(id){
   arma::vec current_aw = Rcpp::as<arma::vec>(curve_obj["re_mc_state"]);
 
 
-  Rcpp::Rcout << "Pointer to common_pars...";
+  // Rcpp::Rcout << "Pointer to common_pars...";
 
   // Point to common pars
   common_pars = pars;
 
-  Rcpp::Rcout << "Raw data...";
+  // Rcpp::Rcout << "Raw data...";
 
   // Raw Data
   y = Rcpp::as<arma::vec>(data["y"]);
@@ -72,7 +88,7 @@ Curve::Curve(Rcpp::List curve_obj, Pars* pars, int id) : curve_id(id){
   // Basis Evaluation Matrix - warping function
   h_basis_mat = Rcpp::as<arma::mat>(curve_obj["h_basis_mat"]);
 
-  Rcpp::Rcout << "MCMC...";
+  // Rcpp::Rcout << "MCMC...";
 
   // MCMC working variables
   current_a = current_aw.subvec(0, dim_a - 1);
@@ -83,15 +99,12 @@ Curve::Curve(Rcpp::List curve_obj, Pars* pars, int id) : curve_id(id){
   tmp_log_centered_dw = tmp_log_current_dw - mean(tmp_log_current_dw);
   current_z = common_pars->chol_centering_mat.t() * tmp_log_centered_dw;
   current_warped_x = x;  // n_i x 1
-  if((current_warped_x.min() < common_pars->f_full_knots.min()) ||
-     (current_warped_x.max() < common_pars->f_full_knots.max())){
-    Rcpp::Rcout << "Curve id: " << curve_id << std::endl;
-    Rcpp::Rcout << "current_warped_x range: " << current_warped_x.min() <<
-      " " << current_warped_x.max() << std::endl;
-    current_warped_x = arma::clamp(current_warped_x,
-                                   common_pars->f_full_knots.min(),
-                                   common_pars->f_full_knots.max()); // squish time back into spline domain
+  if((current_warped_x.min() < common_pars->f_left_bound) ||
+     (current_warped_x.max() > common_pars->f_right_bound)){
+    // Rcpp::Rcout << "Tugging for curve " << curve_id << std::endl;
+    squish(&current_warped_x, common_pars->f_left_bound, common_pars->f_right_bound);
   }
+
   current_warped_f_basis_mat = arma::zeros(n_i,dim_alpha);
 
   proposed_w = arma::zeros(dim_w); // k_h x 1
@@ -100,7 +113,7 @@ Curve::Curve(Rcpp::List curve_obj, Pars* pars, int id) : curve_id(id){
   proposed_warped_x = arma::zeros(n_i); // n_i x 1
   proposed_warped_f_basis_mat = arma::zeros(n_i,dim_alpha);
 
-  Rcpp::Rcout << "Suff. Stat...";
+  // Rcpp::Rcout << "Suff. Stat...";
 
   // Stochastic approximated sufficient statistics
   sapprox_a = arma::zeros(dim_a); // dim_a x 1
@@ -178,16 +191,11 @@ void Curve::propose_new_w(){
 void Curve::compute_proposed_warping_and_f_basis_mat(){
   // Squish in place to avoid out-of-bound error in gsl_bspline_eval
   proposed_warped_x = h_basis_mat * proposed_w;
-  if((proposed_warped_x.min() < common_pars->f_full_knots.min()) ||
-     (proposed_warped_x.max() < common_pars->f_full_knots.max())){
-    Rcpp::Rcout << "Curve id: " << curve_id << std::endl;
-    Rcpp::Rcout << "current_warped_x range: " << proposed_warped_x.min() <<
-      " " << proposed_warped_x.max() << std::endl;
-    proposed_warped_x = arma::clamp(proposed_warped_x,
-                                    common_pars->f_full_knots.min(),
-                                    common_pars->f_full_knots.max());
+  if((proposed_warped_x.min() < common_pars->f_left_bound) ||
+     (proposed_warped_x.max() > common_pars->f_right_bound)){
+    // Rcpp::Rcout << "Tugging for curve " << curve_id << std::endl;
+    squish(&proposed_warped_x, common_pars->f_left_bound, common_pars->f_right_bound);
   }
-
 
   gsl_vector *tmp_b_vec;
   gsl_bspline_workspace *tmp_bw;
@@ -369,3 +377,25 @@ void Curve::update_sufficient_statistics_approximates(){
   sapprox_log_dw = (1 - current_step_size) * sapprox_log_dw +
     current_step_size * current_log_dw;
 }
+
+
+
+
+Rcpp::List Curve::return_list(){
+  arma::vec tmp_alpha_aug(dim_alpha + 1, arma::fill::ones);
+  tmp_alpha_aug(arma::span(1, dim_alpha)) = common_pars->alpha;
+  return Rcpp::List::create(
+    Rcpp::Named("curve_id", Rcpp::wrap(curve_id)),
+    Rcpp::Named("x", Rcpp::wrap(x)),
+    Rcpp::Named("y", Rcpp::wrap(y)),
+    Rcpp::Named("warped_x", Rcpp::wrap(h_basis_mat * sapprox_w)),
+    Rcpp::Named("fitted_y", Rcpp::wrap(sapprox_aug_warped_f_basis_mat * tmp_alpha_aug)),
+    Rcpp::Named("sapprox_a", Rcpp::wrap(sapprox_a)),
+    Rcpp::Named("sapprox_w", Rcpp::wrap(sapprox_w)),
+    Rcpp::Named("sapprox_warped_f_basis_mat", Rcpp::wrap(sapprox_warped_f_basis_mat)),
+    Rcpp::Named("sapprox_aug_warped_f_basis_mat", Rcpp::wrap(sapprox_aug_warped_f_basis_mat)),
+    Rcpp::Named("sapprox_hat_mat", Rcpp::wrap(sapprox_hat_mat)),
+    Rcpp::Named("sapprox_sigma_a", Rcpp::wrap(sapprox_sigma_a)),
+    Rcpp::Named("sapprox_log_dw", Rcpp::wrap(sapprox_log_dw))
+  );
+};
