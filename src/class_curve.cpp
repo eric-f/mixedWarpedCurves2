@@ -321,6 +321,8 @@ void Curve::do_simulation_step(){
 
 // Centering step for current_a
 void Curve::center_current_a(){
+  if(!common_pars->need_centering)
+    return;
   arma::mat centering_mat(dim_a, dim_a);
   arma::vec mean_current_a(dim_a);
   if(dim_a == 2){
@@ -333,14 +335,6 @@ void Curve::center_current_a(){
   else {
     Rcpp::Rcout << "Warning! Centering only supporting for dim_a = 2.";
   }
-  // if(curve_id == 1){
-  //   Rcpp::Rcout << "curve id: " << curve_id << std::endl;
-  //   Rcpp::Rcout << "centered centering_mat: " << std::endl << centering_mat << std::endl;
-  //   Rcpp::Rcout << "centered current_a: " << current_a.t() << std::endl;
-  // }
-  // else{
-  //   Rcpp::Rcout << "centered current_a: " << current_a.t() << std::endl;
-  // }
 }
 
 
