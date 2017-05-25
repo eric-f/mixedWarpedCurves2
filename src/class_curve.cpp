@@ -153,7 +153,7 @@ void Curve::compute_proposed_warping_and_f_basis_mat(){
   gsl_bspline_knots(common_pars->f_break_points, tmp_bw);      // computes the knots associated with the given breakpoints and
                                                                // stores them internally in bw->knots.
 
-  for(int i = 0; i < n_i; ++i){           // construct the basis evaluation matrix, warped_f_basis_mat
+  for(int i = 0; i < n_i; ++i){                                // construct the basis evaluation matrix, warped_f_basis_mat
     gsl_bspline_eval(proposed_warped_x[i], tmp_b_vec, tmp_bw); // compute B_j(x_i) for all j
     for(int j = 0; j < dim_alpha; ++j){                        // fill in row i of X
       proposed_warped_f_basis_mat(i,j) = gsl_vector_get(tmp_b_vec, j);
