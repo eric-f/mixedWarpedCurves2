@@ -14,18 +14,12 @@ Curve::Curve(Rcpp::List curve_obj, Pars* pars, int id) : curve_id(id){
   arma::vec tmp_log_current_dw;
   arma::vec tmp_log_centered_dw;
 
-
   // Extract components from R list
   Rcpp::List data = curve_obj["data"];
   arma::vec current_aw = Rcpp::as<arma::vec>(curve_obj["re_mc_state"]);
 
-
-  // Rcpp::Rcout << "Pointer to common_pars...";
-
   // Point to common pars
   common_pars = pars;
-
-  // Rcpp::Rcout << "Raw data...";
 
   // Raw Data
   y = Rcpp::as<arma::vec>(data["y"]);
@@ -41,8 +35,6 @@ Curve::Curve(Rcpp::List curve_obj, Pars* pars, int id) : curve_id(id){
   // Basis Evaluation Matrix - warping function
   h_basis_mat = Rcpp::as<arma::mat>(curve_obj["h_basis_mat"]);
 
-  // Rcpp::Rcout << "MCMC...";
-
   // MCMC working variables
   current_a = current_aw.subvec(0, dim_a - 1);
   current_w = current_aw.subvec(dim_a, current_aw.size()-1);
@@ -54,7 +46,6 @@ Curve::Curve(Rcpp::List curve_obj, Pars* pars, int id) : curve_id(id){
   current_warped_x = x;  // n_i x 1
   if((current_warped_x.min() < common_pars->f_left_bound) ||
      (current_warped_x.max() > common_pars->f_right_bound)){
-    // Rcpp::Rcout << "Tugging for curve " << curve_id << std::endl;
     squish(&current_warped_x, common_pars->f_left_bound, common_pars->f_right_bound);
   }
 
@@ -92,7 +83,7 @@ Curve::Curve(Rcpp::List curve_obj, Pars* pars, int id) : curve_id(id){
 void Curve::initialize_current_f_basis_mat(){
   gsl_vector *tmp_b_vec;
   gsl_bspline_workspace *tmp_bw;
-  // Rcpp::Rcout << "allocate a cubic bspline workspace (k = 4)" << std::endl;
+
   // allocate a cubic bspline workspace (k = 4)
   tmp_b_vec = gsl_vector_alloc(dim_alpha);
   tmp_bw = gsl_bspline_alloc(common_pars->f_order,
@@ -102,10 +93,8 @@ void Curve::initialize_current_f_basis_mat(){
   gsl_bspline_knots(common_pars->f_break_points, tmp_bw);      // computes the knots associated with the given breakpoints and
   // stores them internally in bw->knots.
   for(int i = 0; i < n_i; ++i){                                // construct the basis evaluation matrix, warped_f_basis_mat
-    // Rcpp::Rcout << "evaluating current_warped_f_basis_mat" << std::endl;
     gsl_bspline_eval(proposed_warped_x[i], tmp_b_vec, tmp_bw); // compute B_j(x_i) for all j
     for(int j = 0; j < dim_alpha; ++j){                        // fill in row i of X
-      // Rcpp::Rcout << "updating proposed_warped_f_basis_mat" << std::endl;
       current_warped_f_basis_mat(i,j) = gsl_vector_get(tmp_b_vec, j);  // gsl_vector_get(B, j)
     }
   }
@@ -146,7 +135,6 @@ void Curve::compute_proposed_warping_and_f_basis_mat(){
   proposed_warped_x = h_basis_mat * proposed_w;
   if((proposed_warped_x.min() < common_pars->f_left_bound) ||
      (proposed_warped_x.max() > common_pars->f_right_bound)){
-    // Rcpp::Rcout << "Tugging for curve " << curve_id << std::endl;
     squish(&proposed_warped_x, common_pars->f_left_bound, common_pars->f_right_bound);
   }
 
@@ -169,7 +157,6 @@ void Curve::compute_proposed_warping_and_f_basis_mat(){
   for(int i = 0; i < n_i; ++i){           // construct the basis evaluation matrix, warped_f_basis_mat
     gsl_bspline_eval(proposed_warped_x[i], tmp_b_vec, tmp_bw); // compute B_j(x_i) for all j
     for(int j = 0; j < dim_alpha; ++j){                        // fill in row i of X
-      // Rcpp::Rcout << "update proposed_warped_f_basis_mat" << std::endl;
       proposed_warped_f_basis_mat(i,j) = gsl_vector_get(tmp_b_vec, j);
     }
   }
@@ -249,12 +236,6 @@ void Curve::draw_new_a(){
     common_pars->big_sigma_inverse * common_pars->mu);
   current_a = tmp_mu_post + arma::chol(tmp_sigma_post).t() * arma::randn(dim_a);
   common_pars->current_a_mat.col(curve_id) = current_a;
-  // if(curve_id < 50){
-  //   Rcpp::Rcout << "curve_id: " << curve_id << std::endl;
-  //   Rcpp::Rcout << "tmp_mu_post: " << tmp_mu_post.t() << std::endl;
-  //   Rcpp::Rcout << "tmp_sigma_post: " << std::endl << tmp_sigma_post << std::endl;
-  //   Rcpp::Rcout << "sampled_a: " << std::endl << current_a.t() << std::endl;
-  // }
 }
 
 

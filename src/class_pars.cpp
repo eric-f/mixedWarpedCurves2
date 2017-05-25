@@ -17,8 +17,6 @@ Pars::Pars(Rcpp::List pars_list,
   // Iteration counter
   saem_counter = 0;
 
-  // Rcpp::Rcout << "Importing model parameters" << std::endl;
-
   // Model Parameters
   alpha = Rcpp::as<arma::vec>(pars_list["alp"]);
   sigma2 = Rcpp::as<double>(pars_list["sigma2"]);
@@ -32,8 +30,6 @@ Pars::Pars(Rcpp::List pars_list,
   dim_w = kappa.size() + 1;
   dim_alpha = alpha.size();
 
-  // Rcpp::Rcout << "Importing auxiliary variables" << std::endl;
-
   // Auxiliary variables
   n_total = Rcpp::as<int>(aux["n_total"]);
   n_curve = Rcpp::as<int>(aux["n_curve"]);
@@ -45,8 +41,6 @@ Pars::Pars(Rcpp::List pars_list,
   big_sigma_inverse = Rcpp::as<arma::mat>(aux["Sigma_inv"]);
   chol_centering_mat = Rcpp::as<arma::mat>(aux["L"]); // chol_centering_mat
   identity_cor_mat = arma::eye(dim_w - 2, dim_w - 2);
-
-  // Rcpp::Rcout << "Importing control variables" << std::endl;
 
   // SA-MCMC Control parameters
   n_burn_saem = Rcpp::as<int>(control_list["nBurnSAEM"]);
