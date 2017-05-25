@@ -86,12 +86,11 @@ void Curve::initialize_current_f_basis_mat(){
 
   // allocate a cubic bspline workspace (k = 4)
   tmp_b_vec = gsl_vector_alloc(dim_alpha);
-  tmp_bw = gsl_bspline_alloc(common_pars->f_order,
-                             common_pars->f_break_points.size());
-  // Rcpp::Rcout << "evaluate current_warped_f_basis_mat" << std::endl;
+  tmp_bw = gsl_bspline_alloc(common_pars->f_order, common_pars->f_break_points.size());
+
   // evaluate current_warped_f_basis_mat
   gsl_bspline_knots(common_pars->f_break_points, tmp_bw);      // computes the knots associated with the given breakpoints and
-  // stores them internally in bw->knots.
+                                                               // stores them internally in tmp_bw->knots.
   for(int i = 0; i < n_i; ++i){                                // construct the basis evaluation matrix, warped_f_basis_mat
     gsl_bspline_eval(proposed_warped_x[i], tmp_b_vec, tmp_bw); // compute B_j(x_i) for all j
     for(int j = 0; j < dim_alpha; ++j){                        // fill in row i of X
@@ -193,7 +192,7 @@ double Curve::compute_log_mh_ratio(){
   current_llk_w = compute_llk_dw(current_dw, common_pars->tau * common_pars->kappa);
   proposed_llk_w = compute_llk_dw(proposed_dw, common_pars->tau * common_pars->kappa);
 
-  // Log jacobian term for the MH ratio
+  // Compute the log jacobian term for the MH ratio
   log_jacobian_term = arma::sum(arma::log(proposed_dw) - arma::log(current_dw));
 
   return proposed_llk_data - current_llk_data + proposed_llk_w - current_llk_w + log_jacobian_term;

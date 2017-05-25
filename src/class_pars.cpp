@@ -50,7 +50,7 @@ Pars::Pars(Rcpp::List pars_list,
   need_centering = Rcpp::as<bool>(control_list["centering"]);
   sa_step_size_mod = Rcpp::as<double>(control_list["alphaSAEM"]);
 
-  // generate step sizes
+  // Generate step sizes
   saem_step_sizes = clamp(arma::linspace(1, n_iterations, n_iterations) - n_burn_saem, 1, arma::datum::inf);
   saem_step_sizes = pow(saem_step_sizes, -sa_step_size_mod);
 
@@ -74,7 +74,8 @@ Pars::Pars(Rcpp::List pars_list,
 
 // Keep track of the acceptance rate of the metropolis-hastings sampler and
 // adapt the scale parameter of the proposal distribution
-// Depends on: ...
+// Depends on: mh_accept_rate_history_counter, n_iterations,
+//             mh_accept_rate_history,
 // Changes: ...
 // Counter increment: mh_accept_rate_history_counter,
 //                    mh_accept_rate_table_counter,
@@ -112,7 +113,10 @@ void Pars::post_simulation_housekeeping(){
 
 
 // Gather stochastic approximates of the sufficient statistics and perform an M-step
+// Depends on:
+// Changes:
 void Pars::update_parameter_estimates(std::vector<Curve>* mydata){
+  // Temporary variables
   arma::mat tmp_mean_sigma_a(dim_a, dim_a, arma::fill::zeros);
   arma::mat tmp_mean_hat_mat(dim_alpha + 1, dim_alpha + 1, arma::fill::zeros);
   arma::vec tmp_sum_log_dw(dim_w-1, arma::fill::zeros);
@@ -162,6 +166,8 @@ void Pars::update_parameter_estimates(std::vector<Curve>* mydata){
 
 
 // Increase saem iteration counter
+// Depends on: Nil
+// Changes: saem_counter
 void Pars::advance_iteration_counter(){
   ++saem_counter;
 }
@@ -169,6 +175,9 @@ void Pars::advance_iteration_counter(){
 
 
 // Print estimates for monitoring
+// Depends on: saem_counter, proposal_sigma, big_sigma, alpha, sigma2, tau
+//             mh_accept_rate_history, mh_accept_rate_history_counter
+// Changes: Nil
 void Pars::print_estimates(int interval){
   if(saem_counter % interval == 0){
     Rcpp::Rcout << "=================================" << std::endl;
@@ -185,6 +194,7 @@ void Pars::print_estimates(int interval){
 
 
 
+// Return as R list
 Rcpp::List Pars::return_list(){
   return Rcpp::List::create(
     Rcpp::Named("alpha", Rcpp::wrap(alpha)),
