@@ -59,11 +59,9 @@ Pars::Pars(Rcpp::List pars_list,
   calibrate_period = std::min(2 * n_burn_saem, n_iterations);
   mh_accept_rate_lb = Rcpp::as<double>(control_list["accept_rate_lb"]);
   mh_accept_rate_ub = Rcpp::as<double>(control_list["accept_rate_ub"]);
-  mh_accept_rates_table_ncol = Rcpp::as<int>(control_list["n_accept_rates"]);
-  mh_accept_rate_table = arma::zeros(n_curve, mh_accept_rates_table_ncol);
+  mh_accept_rate_table = arma::zeros(n_curve, Rcpp::as<int>(control_list["n_accept_rates"]));
   mh_accept_rate_table_counter = 0;
-  mh_accept_rate_history_counter_ncol = n_iterations;
-  mh_accept_rate_history = arma::zeros(mh_accept_rate_history_counter_ncol);
+  mh_accept_rate_history = arma::zeros(n_iterations);
   mh_accept_rate_history_counter = 0;
 
   // Temporary variables for centering step
@@ -83,12 +81,12 @@ Pars::Pars(Rcpp::List pars_list,
 void Pars::post_simulation_housekeeping(){
   double tmp_accept_rate;
   // Record acceptance rate
-  if(mh_accept_rate_history_counter < mh_accept_rate_history_counter_ncol){
+  if(mh_accept_rate_history_counter < n_iterations){
     mh_accept_rate_history(mh_accept_rate_history_counter) =
       arma::mean(mh_accept_rate_table.col(mh_accept_rate_table_counter)) / n_curve / n_burn_mcmc;
 
     // Table is full, calibrate and reset tallies (TO-DO: print and check table)
-    if((mh_accept_rate_table_counter % mh_accept_rates_table_ncol) == (mh_accept_rates_table_ncol - 1)){
+    if((mh_accept_rate_table_counter % mh_accept_rate_table.n_cols) == (mh_accept_rate_table.n_cols - 1)){
       // Calibrate if still adapting
       if(saem_counter < calibrate_period){
         tmp_accept_rate = accu(mh_accept_rate_table) / mh_accept_rate_table.n_cols / mh_accept_rate_table.n_rows / n_burn_mcmc;
@@ -100,11 +98,11 @@ void Pars::post_simulation_housekeeping(){
         }
       }
       // Reset tallies
-      mh_accept_rate_table = arma::zeros(n_curve, mh_accept_rates_table_ncol);
+      mh_accept_rate_table.reset();
     }
     // Advance counters
     ++mh_accept_rate_history_counter;
-    mh_accept_rate_table_counter = (mh_accept_rate_table_counter + 1) % mh_accept_rates_table_ncol;
+    mh_accept_rate_table_counter = (mh_accept_rate_table_counter + 1) % mh_accept_rate_table.n_cols;
     return;
   }
   return;
