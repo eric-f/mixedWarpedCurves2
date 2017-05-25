@@ -5,54 +5,7 @@
 #include <gsl/gsl_bspline.h>
 #include "class_pars.h"
 #include "class_curve.h"
-
-void squish(arma::vec *x, double left_bound, double right_bound) {
-  int n = x->size();
-
-  for (int i = 0; i < n; ++i) {
-    if (x->at(i) < left_bound) {
-      x->at(i) = left_bound;
-    } else if (x->at(i) > right_bound) {
-      x->at(i) = right_bound;
-    }
-  }
-  return;
-}
-
-
-
-double compute_llk_dw(arma::vec dw, arma::vec tau_kappa) {
-  int dim_dw;
-  bool any_degenerate(false);
-  double log_d_terms;
-  double log_w_terms = 0;
-  double density;
-
-  dim_dw = dw.size();
-  // log reciprocal of generalized beta function
-  log_d_terms = - lgamma(sum(tau_kappa));
-  for(int i=0; i<dim_dw; i++){
-    log_d_terms += lgamma(tau_kappa(i));
-  };
-  // check degenerate case
-  for(int i=0; i<dim_dw; i++){
-    if(dw[i]==0 && tau_kappa(i)==1){
-      any_degenerate = true;
-    }
-  }
-  // density kernel
-  if(any_degenerate){
-    log_w_terms = R_NegInf;
-  } else{
-    for(int i=0; i<dim_dw; i++){
-      log_w_terms += (tau_kappa(i) - 1) * log(dw(i));
-    }
-  }
-  density = log_w_terms - log_d_terms;
-  return density;
-}
-
-
+#include "util.h"
 
 // Constructor
 Curve::Curve(Rcpp::List curve_obj, Pars* pars, int id) : curve_id(id){
