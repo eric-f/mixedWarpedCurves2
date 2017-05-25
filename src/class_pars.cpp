@@ -98,7 +98,7 @@ void Pars::post_simulation_housekeeping(){
         }
       }
       // Reset tallies
-      mh_accept_rate_table.reset();
+      mh_accept_rate_table.zeros();
     }
     // Advance counters
     ++mh_accept_rate_history_counter;
