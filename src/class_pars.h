@@ -12,10 +12,6 @@ class Curve;
 
 class Pars {
 public:
-  // SAEM iterations
-  int saem_counter;
-  arma::vec saem_step_sizes;
-
   // Model Parameters
   arma::vec alpha;     // k_f x 1
   double sigma2;
@@ -42,12 +38,16 @@ public:
   arma::mat identity_cor_mat; // dim_z x dim_z identity matrix (dim_z = dim_w - 2)
 
   // SA-MCMC settings
-  double sa_step_size_mod;
+  int n_core;
   int n_iterations;
+  int saem_counter;
   int n_burn_saem;
   int calibrate_period;
+  // SA
+  double sa_step_size_mod;
+  arma::vec saem_step_sizes;
+  // MCMC
   int n_burn_mcmc;
-  int n_core;
   double proposal_sigma;
   bool need_centering;
   double mh_accept_rate_lb;
