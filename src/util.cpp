@@ -5,10 +5,10 @@
 
 // Function to compute minus log likelihood and derivatives
 // for Dirichlet distribution with fixed mean                                              */
-arma::vec nllk_dirichlet_rcpp (double log_tau,
-                               arma::vec log_dw,
-                               int n_curve,
-                               arma::vec kappa) {
+arma::vec nllk_dirichlet (double log_tau,
+                          arma::vec log_dw,
+                          int n_curve,
+                          arma::vec kappa) {
   double tau = std::exp(log_tau);
   arma::vec tau_kappa = tau * kappa;
 
@@ -59,22 +59,6 @@ arma::vec nllk_dirichlet_rcpp (double log_tau,
 
 
 
-// Function to clamp warped time and avoid out-of-bound error
-void squish(arma::vec *x, double left_bound, double right_bound) {
-  int n = x->size();
-
-  for (int i = 0; i < n; ++i) {
-    if (x->at(i) < left_bound) {
-      x->at(i) = left_bound;
-    } else if (x->at(i) > right_bound) {
-      x->at(i) = right_bound;
-    }
-  }
-  return;
-}
-
-
-
 // Function to compute Dirichlet log-likelihood
 double compute_llk_dw(arma::vec dw, arma::vec tau_kappa) {
   int dim_dw;
@@ -85,13 +69,13 @@ double compute_llk_dw(arma::vec dw, arma::vec tau_kappa) {
 
   dim_dw = dw.size();
   // log reciprocal of generalized beta function
-  log_d_terms = - lgamma(sum(tau_kappa));
+  log_d_terms = - boost::math::lgamma(arma::sum(tau_kappa));
   for(int i=0; i<dim_dw; i++){
-    log_d_terms += lgamma(tau_kappa(i));
+    log_d_terms += boost::math::lgamma(tau_kappa(i));
   };
   // check degenerate case
   for(int i=0; i<dim_dw; i++){
-    if(dw[i]==0 && tau_kappa(i)==1){
+    if(dw(i)==0 && tau_kappa(i)==1){
       any_degenerate = true;
     }
   }

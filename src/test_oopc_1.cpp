@@ -14,7 +14,11 @@ void test_oopc1(Rcpp::List curve_list,
 
   // Special handling of f_break_points as an RcppGSL::Vector object to be propergated to the classes.
   RcppGSL::Vector f_break_points = Rcpp::as< RcppGSL::vector<double> >(Rcpp::as<Rcpp::List>(pars_list["aux"])["f_break_points"]);
-  Pars pars(pars_list, control_list, f_break_points);
+  RcppGSL::Vector h_break_points = Rcpp::as< RcppGSL::vector<double> >(Rcpp::as<Rcpp::List>(pars_list["aux"])["h_break_points"]);
+
+  Pars pars(pars_list, control_list, f_break_points, h_break_points);
+  pars.generate_chol_centering_mat();
+
   std::vector<Curve> data;
   int id = 0;
   for(Rcpp::List::iterator it = curve_list.begin(); it != curve_list.end(); ++it) {
@@ -110,7 +114,7 @@ void test_oopc1(Rcpp::List curve_list,
       it->update_sufficient_statistics_approximates();
     }
     // Rcpp::Rcout << "Acceptance rate" << std::endl;
-    pars.post_simulation_housekeeping();
+    pars.track_mh_acceptance_and_calibrate_proposal();
     // Rcpp::Rcout << "Maximization" << std::endl;
     pars.update_parameter_estimates(&data);
     // Rcpp::Rcout << "Counter increment" << std::endl;

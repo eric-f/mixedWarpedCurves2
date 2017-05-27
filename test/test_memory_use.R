@@ -1,70 +1,88 @@
-# rm(list=ls())
-# gc()
+rm(list=ls())
+gc()
 
 library(mixedWarpedCurves2)
-library(mixedWarpedCurves)
-# library(profvis)
-library(lineprof)
+# library(mixedWarpedCurves)
 # library(ggplot2)
-#
+# library(plyr)
+
 dat0 <- readRDS("~/org/lib/mixedWarpedCurves/data/test_data.rds")
-system.time({
-# lineprof({
-  set.seed(1)
-  saemOut <- fsim(
-    y = dat0$y,
-    obs_time = dat0$x,
-    curve_id = dat0$id,
-    init_pars = NULL,
-    basis.control = attr(dat0, "basis.control"),
-    pars.control = control_model_param(fixed.Sigma = FALSE),
-    sa.control = control_sa(nIter = 500,
-                            alphaSAEM = 0.75,
-                            nCore = 1,
-                            nBurnSAEM = 100,
-                            nBurnMCMC = 5,
-                            prop_sigma = 1e-2,
-                            centering = TRUE,
-                            accept_rate_lb = 0.15,
-                            accept_rate_ub = 0.35),
-    track_pars = FALSE)
-})
-# saveRDS(saemOut, "~/org/lib/mixedWarpedCurves/data/saemOut_for_test_memory_use.rds")
+# dat0 <- readRDS("~/org/project/Simulations/data/w1-20x1000/data_w1-20x1000-set_000.rds")
+# system.time({
+# # lineprof({
+#   set.seed(1)
+#   saemOut <- mixedWarpedCurves::fsim(
+#     y = dat0$y,
+#     obs_time = dat0$x,
+#     curve_id = dat0$id,
+#     init_pars = NULL,
+#     basis.control = attr(dat0, "basis.control"),
+#     pars.control = control_model_param(fixed.Sigma = FALSE),
+#     sa.control = control_sa(nIter = 500,
+#                             alphaSAEM = 0.75,
+#                             nCore = 1,
+#                             nBurnSAEM = 100,
+#                             nBurnMCMC = 5,
+#                             prop_sigma = 1e-2,
+#                             centering = TRUE,
+#                             accept_rate_lb = 0.17,
+#                             accept_rate_ub = 0.33),
+#     track_pars = FALSE)
+# })
+# #
+# #
+# saemOutDf <- predict_fsim(saemOut)
+# saemOutDf$id <- factor(saemOutDf$id, levels = 1:20)
+# ggplot(saemOutDf) +
+#   geom_line(aes(x=x, y=y, col=id)) +
+#   geom_line(aes(x=x, y=fitted_y, group=id), linetype=2) +
+#   facet_wrap(~id)
 
-library(ggplot2)
-saemOutDf <- predict_fsim(saemOut)
-saemOutDf$id <- as.factor(saemOutDf$id)
-ggplot(saemOutDf) +
-  geom_line(aes(x=x, y=y, col=id)) +
-  geom_line(aes(x=x, y=fitted_y, group=id), linetype=2) +
-  facet_wrap(~id)
+bctrl <- attr(dat0, "basis.control")
 
-
-
-
-
-
-saemOut <- readRDS("~/org/lib/mixedWarpedCurves/data/saemOut_for_test_memory_use.rds")
-saemOut$input$sa.control$nBurnSAEM <- 200
-saemOut$input$sa.control$nIter <- 500
-saemOut$input$sa.control$n_accept_rates <- 5
-saemOut$input$sa.control$nBurnMCMC <- 5
-saemOut$input$sa.control$accept_rate_lb
-saemOut$input$sa.control$accept_rate_ub
-# sink(file = "~/org/lib/mixedWarpedCurves/test/dump.txt")
-system.time(my_fit <- test_oopc(saemOut$data_obj_lst, saemOut$pars, saemOut$input$sa.control))
-# sink()
-
-
-
-# saemOut$pars[c(2,5,7,4)]
-
-library(plyr)
-library(ggplot2)
-out <- ldply(my_fit$curves, function(x){
-  data.frame(id=x$curve_id, x=x$x, y=x$y, warped_x=x$warped_x, fitted_y=x$fitted_y)
-})
-ggplot(data=out) +
-  geom_line(aes(x=x, y=y, col=as.factor(id))) +
-  geom_line(aes(x=x, y=fitted_y, group=as.factor(id)), linetype=2) +
-  facet_wrap(~id)
+system.time(my_fit <-
+              mixedWarpedCurves2::fsim(y = dat0$y,
+                                       obs_time = dat0$x,
+                                       curve_id = dat0$id,
+                                       saem_control = control_saem(n_saem_iter = 1000,
+                                                                   n_saem_burn = 100,
+                                                                   saem_step_seq_pow = 0.75,
+                                                                   n_mcmc_burn = 5,
+                                                                   accept_rate_window = 5,
+                                                                   # prop_sigma = 7.8125e-05,
+                                                                   prop_sigma = 1e-2,
+                                                                   need_centering = TRUE,
+                                                                   accept_rate_lb = 0.17,
+                                                                   accept_rate_ub = 0.33,
+                                                                   h_n_knots = bctrl$h.nknots+2,
+                                                                   f_n_knots = bctrl$f.nknots+2)))
+# plot(my_fit$aux$proposal_sigma_history, type="l")
+# plot(my_fit$aux$mh_accept_rate_history)
+# plot(my_fit$pars_track$sigma2_track)
+# plot(my_fit$pars_track$tau)
+# out <- ldply(my_fit$curves, function(x){
+#   data.frame(id=x$curve_id, x=x$x, y=x$y, warped_x=x$warped_x, fitted_y=x$fitted_y)
+# })
+# out$id <- as.factor(out$id+1)
+#
+# var(saemOutDf$y - saemOutDf$fitted_y)
+# var(out$y - out$fitted_y)
+#
+#
+# saemOut$pars[c(1,3,5,7,2,4)]
+# my_fit$fit
+#
+#
+# ggplot(data=out) +
+#   geom_line(aes(x=x, y=y, col=id)) +
+#   geom_line(aes(x=x, y=fitted_y, group=id), linetype=2) +
+#   facet_wrap(~id)
+#
+#
+# ggplot(data=out) +
+#   geom_line(aes(x=x, y=warped_x, col=id))
+# ggplot(saemOutDf) +
+#   geom_line(aes(x=x, y=saemOutDf$fitted_warped_x, col=id))
+#
+#
+#

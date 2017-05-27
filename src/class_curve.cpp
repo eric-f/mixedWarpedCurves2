@@ -8,15 +8,11 @@
 #include "util.h"
 
 // Constructor
-Curve::Curve(Rcpp::List curve_obj, Pars* pars, int id) : curve_id(id){
+Curve::Curve(Rcpp::List data, Pars* pars, int id) : curve_id(id){
 
   // Temporary variables
   arma::vec tmp_log_current_dw;
   arma::vec tmp_log_centered_dw;
-
-  // Extract components from R list
-  Rcpp::List data = curve_obj["data"];
-  arma::vec current_aw = Rcpp::as<arma::vec>(curve_obj["re_mc_state"]);
 
   // Point to common pars
   common_pars = pars;
@@ -28,17 +24,18 @@ Curve::Curve(Rcpp::List curve_obj, Pars* pars, int id) : curve_id(id){
   // Dimensions
   n_i = y.size();
   dim_a = 2;
-  dim_w = current_aw.size() - 2;
+  dim_w = common_pars->kappa.size() + 1;
   dim_z = dim_w - 2;
   dim_alpha = common_pars->alpha.size(); // number of basis coefficients for the base curve
 
   // Basis Evaluation Matrix - warping function
-  h_basis_mat = Rcpp::as<arma::mat>(curve_obj["h_basis_mat"]);
+  h_basis_mat = arma::zeros(n_i, dim_w);
 
   // MCMC working variables
-  current_a = current_aw.subvec(0, dim_a - 1);
-  current_w = current_aw.subvec(dim_a, current_aw.size()-1);
-  current_dw = arma::diff(current_w);
+  current_a = common_pars->mu;
+  current_dw = common_pars->kappa;
+  current_w = arma::zeros(dim_w);
+  current_w(arma::span(1,dim_w-1)) = arma::cumsum(current_dw);
   // Transform current_w back to euclidean space
   tmp_log_current_dw = arma::log(current_dw);
   tmp_log_centered_dw = tmp_log_current_dw - mean(tmp_log_current_dw);
@@ -46,14 +43,14 @@ Curve::Curve(Rcpp::List curve_obj, Pars* pars, int id) : curve_id(id){
   current_warped_x = x;  // n_i x 1
   if((current_warped_x.min() < common_pars->f_left_bound) ||
      (current_warped_x.max() > common_pars->f_right_bound)){
-    squish(&current_warped_x, common_pars->f_left_bound, common_pars->f_right_bound);
+    current_warped_x = arma::clamp(current_warped_x, common_pars->f_left_bound, common_pars->f_right_bound);
   }
 
   current_warped_f_basis_mat = arma::zeros(n_i,dim_alpha);
 
   proposed_w = arma::zeros(dim_w); // k_h x 1
-  proposed_dw = arma::zeros(dim_w); // k_h - 1 x 1
-  proposed_z = arma::zeros(dim_w); //dim_w x 1
+  proposed_dw = arma::zeros(dim_w - 1); // k_h - 1 x 1
+  proposed_z = arma::zeros(dim_w - 2); //dim_w x 1
   proposed_warped_x = arma::zeros(n_i); // n_i x 1
   proposed_warped_f_basis_mat = arma::zeros(n_i,dim_alpha);
 
@@ -75,6 +72,40 @@ Curve::Curve(Rcpp::List curve_obj, Pars* pars, int id) : curve_id(id){
   current_sigma_a = arma::zeros(dim_a, dim_a);                      // dim_a x dim_a
   current_log_dw = arma::zeros(dim_w - 1);                          // (dim_w - 1) x 1
 }
+
+
+
+// Initialize the warping function basis evaluation matrix
+// Depends on: ...
+// Changes: h_basis_mat
+void Curve::initialize_h_basis_mat(){
+  if((x.min() < common_pars->h_left_bound) ||
+     (x.max() > common_pars->h_right_bound)){
+    x = arma::clamp(x, common_pars->h_left_bound, common_pars->h_right_bound);
+  }
+
+  gsl_vector *tmp_b_vec;
+  gsl_bspline_workspace *tmp_bw;
+
+  // allocate a cubic bspline workspace (k = 4)
+  tmp_b_vec = gsl_vector_alloc(dim_w);
+  tmp_bw = gsl_bspline_alloc(common_pars->h_order, common_pars->h_break_points.size());
+
+  // evaluate current_warped_f_basis_mat
+  gsl_bspline_knots(common_pars->h_break_points, tmp_bw);      // computes the knots associated with the given breakpoints and
+                                                               // stores them internally in tmp_bw->knots.
+  for(int i = 0; i < n_i; ++i){                                // construct the basis evaluation matrix, warped_f_basis_mat
+    gsl_bspline_eval(x[i], tmp_b_vec, tmp_bw);                 // compute B_j(x_i) for all j
+    for(int j = 0; j < dim_w; ++j){                            // fill in row i of X
+      h_basis_mat(i,j) = gsl_vector_get(tmp_b_vec, j);         // gsl_vector_get(B, j)
+    }
+  }
+  // free GSL workspace
+  gsl_bspline_free(tmp_bw);
+  gsl_vector_free(tmp_b_vec);
+  return;
+}
+
 
 
 // Initialize the f_basis_mat under current warpings
@@ -100,6 +131,7 @@ void Curve::initialize_current_f_basis_mat(){
   // free GSL workspace
   gsl_bspline_free(tmp_bw);
   gsl_vector_free(tmp_b_vec);
+  return;
 }
 
 
@@ -118,9 +150,7 @@ void Curve::propose_new_w(){
   tmp_dw.transform(exp);
   proposed_dw = tmp_dw / arma::sum(tmp_dw);
   proposed_w(0) = 0;
-  for(int idx = 0; idx < proposed_dw.size(); ++idx){
-    proposed_w(idx + 1) = proposed_w(idx) + proposed_dw(idx);
-  }
+  proposed_w(arma::span(1, dim_w - 1)) = arma::cumsum(proposed_dw);
   return;
 }
 
@@ -134,7 +164,7 @@ void Curve::compute_proposed_warping_and_f_basis_mat(){
   proposed_warped_x = h_basis_mat * proposed_w;
   if((proposed_warped_x.min() < common_pars->f_left_bound) ||
      (proposed_warped_x.max() > common_pars->f_right_bound)){
-    squish(&proposed_warped_x, common_pars->f_left_bound, common_pars->f_right_bound);
+    proposed_warped_x = arma::clamp(proposed_warped_x, common_pars->f_left_bound, common_pars->f_right_bound);
   }
 
   gsl_vector *tmp_b_vec;
@@ -145,7 +175,7 @@ void Curve::compute_proposed_warping_and_f_basis_mat(){
   // allocate a cubic bspline workspace (k = 4)
   tmp_b_vec = gsl_vector_alloc(dim_alpha);
   tmp_bw = gsl_bspline_alloc(common_pars->f_order,
-                         common_pars->f_break_points.size());
+                             common_pars->f_break_points.size());
 
   // Rcpp::Rcout << "evaluate proposed_warped_f_basis_mat" << std::endl;
 
@@ -163,6 +193,7 @@ void Curve::compute_proposed_warping_and_f_basis_mat(){
   // free GSL workspace
   gsl_bspline_free(tmp_bw);
   gsl_vector_free(tmp_b_vec);
+  return;
 }
 
 
@@ -173,29 +204,31 @@ void Curve::compute_proposed_warping_and_f_basis_mat(){
 // Changes: Nil
 // Return: log metropolis-hasting ratio
 double Curve::compute_log_mh_ratio(){
-  double current_llk_data;
-  double proposed_llk_data;
-  double current_llk_w;
-  double proposed_llk_w;
-  double log_jacobian_term;
+  double proposed_minus_current_llk_data = 0.0;
+  double current_llk_w = 0.0;
+  double proposed_llk_w = 0.0;
+  double log_jacobian_term = 0.0;
 
   arma::vec proposed_warped_f = proposed_warped_f_basis_mat * common_pars->alpha;
-  arma::vec current_warped_f = current_warped_f_basis_mat * common_pars->alpha;
   arma::vec proposed_warped_y = current_a(0) + current_a(1) * proposed_warped_f;
+  arma::vec current_warped_f = current_warped_f_basis_mat * common_pars->alpha;
   arma::vec current_warped_y = current_a(0) + current_a(1) * current_warped_f;
 
+  arma::vec proposed_residual_sum_of_squares = square(y - proposed_warped_y);
+  arma::vec current_residual_sum_of_squares = square(y - current_warped_y);
+
   // Compute the data log-likelihood (up to the common constant term)
-  current_llk_data = -sum(square(y - current_warped_y)) / 2 / common_pars->sigma2;
-  proposed_llk_data = -sum(square(y - proposed_warped_y)) / 2 / common_pars->sigma2;
+  proposed_minus_current_llk_data = arma::sum(current_residual_sum_of_squares -
+    proposed_residual_sum_of_squares) / 2.0 / common_pars->sigma2;
 
   // Compute the dirichlet log-likelihood
-  current_llk_w = compute_llk_dw(current_dw, common_pars->tau * common_pars->kappa);
   proposed_llk_w = compute_llk_dw(proposed_dw, common_pars->tau * common_pars->kappa);
+  current_llk_w = compute_llk_dw(current_dw, common_pars->tau * common_pars->kappa);
 
   // Compute the log jacobian term for the MH ratio
   log_jacobian_term = arma::sum(arma::log(proposed_dw) - arma::log(current_dw));
 
-  return proposed_llk_data - current_llk_data + proposed_llk_w - current_llk_w + log_jacobian_term;
+  return (proposed_minus_current_llk_data + proposed_llk_w - current_llk_w + log_jacobian_term);
 }
 
 
@@ -205,7 +238,8 @@ double Curve::compute_log_mh_ratio(){
 // Change: current_z, current_dw, current_w, current_warped_x, current_warped_f_basis_mat, common_pars
 // Note: Acceptances are tallied in the table of common_pars->mh_accept_rate_table
 void Curve::mh_accept_reject(){
-  double u = sum(arma::randu(1));
+  // double u = sum(arma::randu(1));
+  double u = Rcpp::as<double>(Rcpp::wrap(Rcpp::runif(1)));
   if (std::log(u) < compute_log_mh_ratio()) {
     current_z = proposed_z;
     current_dw = proposed_dw;
@@ -215,6 +249,7 @@ void Curve::mh_accept_reject(){
     ++(common_pars->mh_accept_rate_table(curve_id, common_pars->mh_accept_rate_table_counter));
     return;
   }
+  return;
 }
 
 
@@ -235,6 +270,7 @@ void Curve::draw_new_a(){
     common_pars->big_sigma_inverse * common_pars->mu);
   current_a = tmp_mu_post + arma::chol(tmp_sigma_post).t() * arma::randn(dim_a);
   common_pars->current_a_mat.col(curve_id) = current_a;
+  return;
 }
 
 
@@ -243,11 +279,11 @@ void Curve::draw_new_a(){
 void Curve::do_simulation_step(){
   for(int i = 0; i < common_pars->n_burn_mcmc; ++i){
     propose_new_w();
-    compute_log_mh_ratio();
     compute_proposed_warping_and_f_basis_mat();
     mh_accept_reject();
     draw_new_a();
   }
+  return;
 }
 
 
@@ -268,6 +304,7 @@ void Curve::center_current_a(){
   else {
     Rcpp::Rcout << "Warning! Centering only supporting for dim_a = 2.";
   }
+  return;
 }
 
 
@@ -303,6 +340,7 @@ void Curve::update_sufficient_statistics_approximates(){
     current_step_size * current_sigma_a;
   sapprox_log_dw = (1 - current_step_size) * sapprox_log_dw +
     current_step_size * current_log_dw;
+  return;
 }
 
 
