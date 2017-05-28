@@ -23,7 +23,7 @@ Curve::Curve(Rcpp::List data, Pars* pars, int id) : curve_id(id){
 
   // Dimensions
   n_i = y.size();
-  dim_a = 2;
+  dim_a = common_pars->mu.size();
   dim_w = common_pars->kappa.size() + 1;
   dim_z = dim_w - 2;
   dim_alpha = common_pars->alpha.size(); // number of basis coefficients for the base curve

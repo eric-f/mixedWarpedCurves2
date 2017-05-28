@@ -7,12 +7,9 @@
 #' @param y a vector of observed curves
 #' @param obs_time a vector of the observation times
 #' @param curve_id a vector of curve IDs
-#' @param init_pars a list of values to initialize parameters
-#' @param pars.control a list of values to control which parameters will be treated as known
-#' @param basis.control a list of values to specify the B-splines for the common shape and the warping functions
-#' @param sa.control a list of values to control the MCMC and stochastic approximation
-#' @param track_pars a logical variable for storing the whole sequence of estimates parameters.
-#' @useDynLib mixedWarpedCurves
+#' @param saem_control a list of values to control the MCMC and stochastic approximation
+#' @importFrom Rcpp evalCpp
+#' @useDynLib mixedWarpedCurves2
 #' @export
 fsim <- function(y,
                  obs_time,
@@ -31,7 +28,7 @@ fsim <- function(y,
 
   ## --------------------------------------------------------------------------
   ## Initialize model parameters ----------------------------------------------
-  ## --------------------------------------------------------------------------
+  # --------------------------------------------------------------------------
   pars <- NULL
   # mu (fixed)
   pars$mu <- c(0, 1)

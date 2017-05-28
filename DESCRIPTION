@@ -25,4 +25,4 @@ LinkingTo:
     RcppGSL,
     BH,
     RcppProgress
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1

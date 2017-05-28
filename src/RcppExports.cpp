@@ -21,36 +21,9 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// test_oopc1
-void test_oopc1(Rcpp::List curve_list, Rcpp::List pars_list, Rcpp::List control_list);
-RcppExport SEXP mixedWarpedCurves2_test_oopc1(SEXP curve_listSEXP, SEXP pars_listSEXP, SEXP control_listSEXP) {
-BEGIN_RCPP
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type curve_list(curve_listSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type pars_list(pars_listSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_list(control_listSEXP);
-    test_oopc1(curve_list, pars_list, control_list);
-    return R_NilValue;
-END_RCPP
-}
-// test_oopc
-Rcpp::List test_oopc(Rcpp::List curve_list, Rcpp::List pars_list, Rcpp::List control_list);
-RcppExport SEXP mixedWarpedCurves2_test_oopc(SEXP curve_listSEXP, SEXP pars_listSEXP, SEXP control_listSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type curve_list(curve_listSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type pars_list(pars_listSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type control_list(control_listSEXP);
-    rcpp_result_gen = Rcpp::wrap(test_oopc(curve_list, pars_list, control_list));
-    return rcpp_result_gen;
-END_RCPP
-}
 
 static const R_CallMethodDef CallEntries[] = {
     {"mixedWarpedCurves2_saem_fit", (DL_FUNC) &mixedWarpedCurves2_saem_fit, 4},
-    {"mixedWarpedCurves2_test_oopc1", (DL_FUNC) &mixedWarpedCurves2_test_oopc1, 3},
-    {"mixedWarpedCurves2_test_oopc", (DL_FUNC) &mixedWarpedCurves2_test_oopc, 3},
     {NULL, NULL, 0}
 };
 
