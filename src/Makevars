@@ -1,4 +1,5 @@
 ## Use the R_HOME indirection to support installations of multiple R version
 ## PKG_LIBS = $(shell $(R_HOME)/bin/Rscript -e "RcppGSL:::LdFlags()" )
 ## PKG_LIBS = $(shell $(R_HOME)/bin/Rscript -e "RcppGSL:::LdFlags()" ) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
-PKG_LIBS = $(shell $(R_HOME)/bin/Rscript -e "RcppGSL:::LdFlags()" ) $(LAPACK_LIBS) $(BLAS_LIBS)
+PKG_LIBS = $(SHLIB_OPENMP_CXXFLAGS) $(shell $(R_HOME)/bin/Rscript -e "RcppGSL:::LdFlags()" ) $(LAPACK_LIBS) $(BLAS_LIBS)
+PKG_CXXFLAGS=-fopenmp
