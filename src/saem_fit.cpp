@@ -4,6 +4,10 @@
 #include <RcppGSL.h>
 // [[Rcpp::depends(RcppProgress)]]
 #include <progress.hpp>
+#ifdef _OPENMP
+  #include <omp.h>
+#endif
+// [[Rcpp::plugins(openmp)]]
 #include "class_curve.h"
 #include "class_pars.h"
 
@@ -43,20 +47,39 @@ Rcpp::List saem_fit(Rcpp::List curve_list,
       it->initialize_current_f_basis_mat();
   }
 
-  // Run SAEM
+  // Setup multi-threading
+#ifdef _OPENMP
+  omp_set_num_threads(pars->n_core);
+  REprintf("Number of threads=%i\n", omp_get_max_threads());
+#endif
+
+
+  // Setup progress tracking
   int tick = std::max(1, (int) pars->n_iterations / 20);
   Progress p(0, false);
   double progress;
-  for(int sim_idx = 0; sim_idx < pars->n_iterations; ++sim_idx){
+  int saem_idx = 0;
+  int curve_idx = 0;
+
+#pragma omp parallel default(none) shared(tick, saem_idx, data, pars, progress, R_NilValue)
+{
+  // SAEM loop
+  for(saem_idx = 0; saem_idx < pars->n_iterations; ++saem_idx){
     // Simulation step
-    for(std::vector<Curve>::iterator it = data->begin(); it != data->end(); ++it){
-      it->do_simulation_step();
+#pragma omp parallel for
+    for(curve_idx = 0; curve_idx < data->size(); ++curve_idx){
+      data->at(curve_idx).do_simulation_step();
     }
+#pragma omp barrier
+#pragma omp parallel for
     // Centering and stochastic approximation step
-    for(std::vector<Curve>::iterator it = data->begin(); it != data->end(); ++it){
-      it->center_current_a();
-      it->update_sufficient_statistics_approximates();
+    for(curve_idx = 0; curve_idx < data->size(); ++curve_idx){
+      data->at(curve_idx).center_current_a();
+      data->at(curve_idx).update_sufficient_statistics_approximates();
     }
+#pragma omp barrier
+#pragma omp critical
+{
     // MH Calibration
     pars->track_mh_acceptance_and_calibrate_proposal();
     // Maximization step
@@ -69,9 +92,12 @@ Rcpp::List saem_fit(Rcpp::List curve_list,
       // pars.print_estimates(10);
     }
     if (Progress::check_abort())
-      return R_NilValue;
+      saem_idx = data->size(); // Bump index to exit the loop
+}
   }
+}
   Rcpp::Rcout << "(Done)" << std::endl;
+
 
   // Wrap up as R objects
   Rcpp::List curves(pars->n_curve);
