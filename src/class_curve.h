@@ -73,6 +73,7 @@ public:
   void center_current_a();
   void update_sufficient_statistics_approximates();
   Rcpp::List return_list();
+  Rcpp::List return_list(double y_scaling_factor);
 
 private:
   void propose_new_w();

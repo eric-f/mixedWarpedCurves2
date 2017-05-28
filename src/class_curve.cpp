@@ -23,7 +23,7 @@ Curve::Curve(Rcpp::List data, Pars* pars, int id) : curve_id(id){
 
   // Dimensions
   n_i = y.size();
-  dim_a = 2;
+  dim_a = common_pars->mu.size();
   dim_w = common_pars->kappa.size() + 1;
   dim_z = dim_w - 2;
   dim_alpha = common_pars->alpha.size(); // number of basis coefficients for the base curve
@@ -40,7 +40,7 @@ Curve::Curve(Rcpp::List data, Pars* pars, int id) : curve_id(id){
   tmp_log_current_dw = arma::log(current_dw);
   tmp_log_centered_dw = tmp_log_current_dw - mean(tmp_log_current_dw);
   current_z = common_pars->chol_centering_mat.t() * tmp_log_centered_dw;
-  current_warped_x = x;  // n_i x 1
+  current_warped_x = x;
   if((current_warped_x.min() < common_pars->f_left_bound) ||
      (current_warped_x.max() > common_pars->f_right_bound)){
     current_warped_x = arma::clamp(current_warped_x, common_pars->f_left_bound, common_pars->f_right_bound);
@@ -48,26 +48,26 @@ Curve::Curve(Rcpp::List data, Pars* pars, int id) : curve_id(id){
 
   current_warped_f_basis_mat = arma::zeros(n_i,dim_alpha);
 
-  proposed_w = arma::zeros(dim_w); // k_h x 1
-  proposed_dw = arma::zeros(dim_w - 1); // k_h - 1 x 1
-  proposed_z = arma::zeros(dim_w - 2); //dim_w x 1
+  proposed_w = arma::zeros(dim_w);      // dim_w x 1
+  proposed_dw = arma::zeros(dim_w - 1); // (dim_w - 1) x 1
+  proposed_z = arma::zeros(dim_w - 2);  // (dim_w - 2) x 1
   proposed_warped_x = arma::zeros(n_i); // n_i x 1
   proposed_warped_f_basis_mat = arma::zeros(n_i,dim_alpha);
 
   // Rcpp::Rcout << "Suff. Stat...";
 
   // Stochastic approximated sufficient statistics
-  sapprox_a = arma::zeros(dim_a); // dim_a x 1
-  sapprox_w = arma::zeros(dim_w); // dim_w x 1
-  sapprox_warped_f_basis_mat = arma::zeros(n_i, dim_alpha); // n_i x dim_alpha
+  sapprox_a = arma::zeros(dim_a);                                   // dim_a x 1
+  sapprox_w = arma::zeros(dim_w);                                   // dim_w x 1
+  sapprox_warped_f_basis_mat = arma::zeros(n_i, dim_alpha);         // n_i x dim_alpha
 
-  sapprox_aug_warped_f_basis_mat = arma::zeros(n_i, dim_alpha + 1); // n_i x dim_alpha + 1
+  sapprox_aug_warped_f_basis_mat = arma::zeros(n_i, dim_alpha + 1); // n_i x (dim_alpha + 1)
   sapprox_hat_mat = arma::zeros(dim_alpha + 1, dim_alpha + 1);      // (dim_alpha + 1) x (dim_alpha + 1)
   sapprox_sigma_a = arma::zeros(dim_a, dim_a);                      // dim_a x dim_a
   sapprox_log_dw = arma::zeros(dim_w - 1);                          // (dim_w - 1) x 1
 
   // Sufficient statistics based on the current MCMC draw
-  current_aug_warped_f_basis_mat = arma::zeros(n_i, dim_alpha + 1); // n_i x dim_alpha + 1
+  current_aug_warped_f_basis_mat = arma::zeros(n_i, dim_alpha + 1); // n_i x (dim_alpha + 1)
   current_hat_mat = arma::zeros(dim_alpha + 1, dim_alpha + 1);      // (dim_alpha + 1) x (dim_alpha + 1)
   current_sigma_a = arma::zeros(dim_a, dim_a);                      // dim_a x dim_a
   current_log_dw = arma::zeros(dim_w - 1);                          // (dim_w - 1) x 1
@@ -76,7 +76,7 @@ Curve::Curve(Rcpp::List data, Pars* pars, int id) : curve_id(id){
 
 
 // Initialize the warping function basis evaluation matrix
-// Depends on: ...
+// Depends on: x, common_pars
 // Changes: h_basis_mat
 void Curve::initialize_h_basis_mat(){
   if((x.min() < common_pars->h_left_bound) ||
@@ -109,7 +109,7 @@ void Curve::initialize_h_basis_mat(){
 
 
 // Initialize the f_basis_mat under current warpings
-// Depends on: ...
+// Depends on: dim_alpha, common_pars
 // Changes: ...
 void Curve::initialize_current_f_basis_mat(){
   gsl_vector *tmp_b_vec;
@@ -123,7 +123,7 @@ void Curve::initialize_current_f_basis_mat(){
   gsl_bspline_knots(common_pars->f_break_points, tmp_bw);      // computes the knots associated with the given breakpoints and
                                                                // stores them internally in tmp_bw->knots.
   for(int i = 0; i < n_i; ++i){                                // construct the basis evaluation matrix, warped_f_basis_mat
-    gsl_bspline_eval(proposed_warped_x[i], tmp_b_vec, tmp_bw); // compute B_j(x_i) for all j
+    gsl_bspline_eval(current_warped_x[i], tmp_b_vec, tmp_bw); // compute B_j(x_i) for all j
     for(int j = 0; j < dim_alpha; ++j){                        // fill in row i of X
       current_warped_f_basis_mat(i,j) = gsl_vector_get(tmp_b_vec, j);  // gsl_vector_get(B, j)
     }
@@ -289,6 +289,8 @@ void Curve::do_simulation_step(){
 
 
 // Centering step for current_a
+// Depends on: dim_a, common_pars, current_a
+// Changes: current_a
 void Curve::center_current_a(){
   if(!common_pars->need_centering)
     return;
@@ -310,11 +312,15 @@ void Curve::center_current_a(){
 
 
 // Update stochastic approximation of the sufficients statistics
-// Depends on: ...
-// Changes: ...
+// Depends on: n_i, dim_alpha, current_a, current_dw, current_w,
+//             current_warped_f_basis_mat, y, common_pars,
+// Changes: current_hat_mat, current_sigma_a, current_log_dw,
+//          sapprox_a, sapprox_w, sapprox_warped_f_basis_mat,
+//          sapprox_aug_warped_f_basis_mat, sapprox_hat_mat,
+//          sapprox_sigma_a, sapprox_log_dw
 void Curve::update_sufficient_statistics_approximates(){
   double current_step_size = common_pars->saem_step_sizes(common_pars->saem_counter);
-  arma::mat tmp_half_hat_mat(n_i, dim_alpha+1);
+  arma::mat tmp_half_hat_mat(n_i, dim_alpha + 1);
 
   // Compute sufficient statistics based on current MC state
   current_aug_warped_f_basis_mat.col(0) = current_a(0) * arma::ones(n_i);
@@ -345,7 +351,7 @@ void Curve::update_sufficient_statistics_approximates(){
 
 
 
-
+// Return fitted curve, predicted warping functions and sufficient statistics
 Rcpp::List Curve::return_list(){
   arma::vec tmp_alpha_aug(dim_alpha + 1, arma::fill::ones);
   tmp_alpha_aug(arma::span(1, dim_alpha)) = common_pars->alpha;
@@ -361,6 +367,35 @@ Rcpp::List Curve::return_list(){
     Rcpp::Named("sapprox_aug_warped_f_basis_mat", Rcpp::wrap(sapprox_aug_warped_f_basis_mat)),
     Rcpp::Named("sapprox_hat_mat", Rcpp::wrap(sapprox_hat_mat)),
     Rcpp::Named("sapprox_sigma_a", Rcpp::wrap(sapprox_sigma_a)),
+    Rcpp::Named("sapprox_log_dw", Rcpp::wrap(sapprox_log_dw))
+  );
+};
+
+
+
+// Return fitted curve, predicted warping functions and sufficient statistics
+Rcpp::List Curve::return_list(double y_scaling_factor){
+  // Scaled augmented_alpha vector
+  arma::vec tmp_alpha_aug_scaled(dim_alpha + 1, arma::fill::ones);
+  tmp_alpha_aug_scaled(0) = y_scaling_factor;
+  tmp_alpha_aug_scaled(arma::span(1, dim_alpha)) = common_pars->alpha * y_scaling_factor;
+  // Scaling matrices
+  arma::mat a_scaling_mat = arma::eye(2, 2);
+  a_scaling_mat(0, 0) = y_scaling_factor;
+  arma::mat f_basis_scaling_mat = arma::eye(dim_alpha + 1, dim_alpha + 1);
+  f_basis_scaling_mat(0, 0) = y_scaling_factor;
+  return Rcpp::List::create(
+    Rcpp::Named("curve_id", Rcpp::wrap(curve_id)),
+    Rcpp::Named("x", Rcpp::wrap(x)),
+    Rcpp::Named("y", Rcpp::wrap(y * y_scaling_factor)),
+    Rcpp::Named("warped_x", Rcpp::wrap(h_basis_mat * sapprox_w)),
+    Rcpp::Named("fitted_y", Rcpp::wrap(sapprox_aug_warped_f_basis_mat * tmp_alpha_aug_scaled)),
+    Rcpp::Named("sapprox_a", Rcpp::wrap(a_scaling_mat * sapprox_a)),
+    Rcpp::Named("sapprox_w", Rcpp::wrap(sapprox_w)),
+    Rcpp::Named("sapprox_warped_f_basis_mat", Rcpp::wrap(sapprox_warped_f_basis_mat)),
+    Rcpp::Named("sapprox_aug_warped_f_basis_mat", Rcpp::wrap(sapprox_aug_warped_f_basis_mat * f_basis_scaling_mat)),
+    Rcpp::Named("sapprox_hat_mat", Rcpp::wrap(f_basis_scaling_mat * sapprox_hat_mat * f_basis_scaling_mat)),
+    Rcpp::Named("sapprox_sigma_a", Rcpp::wrap(a_scaling_mat * sapprox_sigma_a)),
     Rcpp::Named("sapprox_log_dw", Rcpp::wrap(sapprox_log_dw))
   );
 };

@@ -4,7 +4,7 @@
 #include <boost/math/special_functions.hpp>
 
 // Function to compute minus log likelihood and derivatives
-// for Dirichlet distribution with fixed mean                                              */
+// for Dirichlet distribution with fixed mean
 arma::vec nllk_dirichlet (double log_tau,
                           arma::vec log_dw,
                           int n_curve,

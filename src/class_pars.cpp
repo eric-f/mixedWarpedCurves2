@@ -20,19 +20,19 @@ Pars::Pars(Rcpp::List pars_list,
   // Fixed parameters
   mu = Rcpp::as<arma::vec>(pars_list["mu"]);
   kappa = Rcpp::as<arma::vec>(pars_list["kappa"]);
+
+  // Shape parameter and variance of error term
   alpha = Rcpp::as<arma::vec>(pars_list["alpha"]);
+  sigma2 = Rcpp::as<double>(pars_list["sigma2"]);
 
   // Dimension
   dim_a = mu.size();
   dim_w = kappa.size() + 1;
   dim_alpha = alpha.size();
 
-  // Model parameters
-  sigma2 = Rcpp::as<double>(pars_list["sigma2"]);
-  // big_sigma = Rcpp::as<arma::mat>(pars_list["Sigma"]);
+  // Random effect parameters
   big_sigma = arma::eye(dim_a, dim_a) * 0.01;
   big_sigma_inverse = arma::eye(dim_a, dim_a) * 100;
-  // tau = Rcpp::as<double>(pars_list["tau"]);
   tau = 1000;
 
   // Auxiliary variables
@@ -40,13 +40,10 @@ Pars::Pars(Rcpp::List pars_list,
   n_curve = Rcpp::as<int>(control_list["n_curve"]);
   f_order = Rcpp::as<int>(control_list["f_order"]);
   h_order = Rcpp::as<int>(control_list["h_order"]);
-  // f_break_points = Rcpp::as<RcppGSL::Vector>(control_list["f_break_points"]); // Need to explicitly initiate above
-  // h_break_points = Rcpp::as<RcppGSL::Vector>(control_list["h_break_points"]); // Need to explicitly initiate above
   f_left_bound = gsl_vector_min(f_break_points);
   f_right_bound = gsl_vector_max(f_break_points);
   h_left_bound = gsl_vector_min(h_break_points);
   h_right_bound = gsl_vector_max(h_break_points);
-  // chol_centering_mat = Rcpp::as<arma::mat>(control_list["L"]); // chol_centering_mat
   chol_centering_mat = arma::zeros(dim_w - 1, dim_w - 2);
   identity_cor_mat = arma::eye(dim_w - 2, dim_w - 2);
 
@@ -59,8 +56,9 @@ Pars::Pars(Rcpp::List pars_list,
   sa_step_size_mod = Rcpp::as<double>(control_list["saem_step_seq_pow"]);
 
   // Generate step sizes
-  saem_step_sizes = clamp(arma::linspace(1, n_iterations, n_iterations) - n_burn_saem, 1, arma::datum::inf);
-  saem_step_sizes = pow(saem_step_sizes, -sa_step_size_mod);
+  saem_step_sizes = arma::linspace(1, n_iterations, n_iterations) - n_burn_saem;
+  saem_step_sizes = arma::clamp(saem_step_sizes, 1, arma::datum::inf);
+  saem_step_sizes = arma::pow(saem_step_sizes, -sa_step_size_mod);
 
   // Variable for Tuning proposal sigma over SAEM burning step
   proposal_sigma = Rcpp::as<double>(control_list["prop_sigma"]);
@@ -94,10 +92,10 @@ void Pars::generate_chol_centering_mat(){
   for(int d = 0; d < dim_z; ++d){
     for(int idx_r = d; idx_r < dim_z + 1; ++idx_r){
       if(d == idx_r){
-        chol_centering_mat(idx_r, d) = std::sqrt((dim_z-d)/(dim_z-d+1));
+        chol_centering_mat(idx_r, d) = std::sqrt((dim_z - d) / (dim_z - d + 1));
       }
       else{
-        chol_centering_mat(idx_r, d) = -std::sqrt(1/(dim_z-d)/(dim_z-d+1));
+        chol_centering_mat(idx_r, d) = -std::sqrt(1 / (dim_z - d) / (dim_z - d + 1));
       }
     }
   }
@@ -108,11 +106,11 @@ void Pars::generate_chol_centering_mat(){
 
 // Keep track of the acceptance rate of the metropolis-hastings sampler and
 // adapt the scale parameter of the proposal distribution
-// Depends on: saem_counter, n_iterations,
-//             mh_accept_rate_history,
-// Changes: ...
-// Counter increment: mh_accept_rate_table_counter,
-//                    saem_counter
+// Depends on: saem_counter, mh_accept_rate_table_counter, calibrate_period,
+//             proposal_sigma, mh_accept_rate_table, n_burn_mcmc
+// Changes: mh_accept_rate_history, proposal_sigma_history,
+//          mh_accept_rate_table, proposal_sigma
+// Counter increment: mh_accept_rate_table_counter
 void Pars::track_mh_acceptance_and_calibrate_proposal(){
   double tmp_accept_rate;
   // Record acceptance rate
@@ -144,14 +142,13 @@ void Pars::track_mh_acceptance_and_calibrate_proposal(){
 
 
 // Gather stochastic approximates of the sufficient statistics and perform an M-step
-// Depends on:
-// Changes:
+// Depends on: mydata, n_curve, n_total, kappa
+// Changes: big_sigma, big_sigma_inverse, alpha, sigma2, tau
 void Pars::update_parameter_estimates(std::vector<Curve>* mydata){
   // Temporary variables
   arma::mat tmp_mean_sigma_a(dim_a, dim_a, arma::fill::zeros);
   arma::mat tmp_scaled_hat_mat(dim_alpha + 1, dim_alpha + 1, arma::fill::zeros);
   arma::vec tmp_sum_log_dw(dim_w-1, arma::fill::zeros);
-
   arma::mat tmp_mean_hat_By(dim_alpha, 1, arma::fill::zeros);
   arma::mat tmp_mean_hat_BB(dim_alpha, dim_alpha, arma::fill::zeros);
   arma::vec tmp_alpha_aug(dim_alpha + 1, arma::fill::ones);
@@ -206,6 +203,9 @@ void Pars::advance_iteration_counter(){
 
 
 
+// Store current estiamtes for tracking
+// Depends on: saem_counter, alpha, sigma2, big_sigma, tau
+// Changes: alpha_track, sigma2_track, big_sigma_track, tau_track
 void Pars::track_estimates(){
   // Track estimates
   alpha_track.col(saem_counter) = alpha;
@@ -251,14 +251,29 @@ Rcpp::List Pars::return_pars(){
 
 
 
+// Return estimated parameters as R list
+Rcpp::List Pars::return_pars(double y_scaling_factor){
+  // Scaling matrices
+  arma::mat a_scaling_mat = arma::eye(2, 2);
+  a_scaling_mat(0, 0) = y_scaling_factor;
+  return Rcpp::List::create(
+    Rcpp::Named("mu", Rcpp::wrap(mu)),
+    Rcpp::Named("kappa", Rcpp::wrap(kappa)),
+    Rcpp::Named("alpha", Rcpp::wrap(alpha * y_scaling_factor)),
+    Rcpp::Named("sigma2", Rcpp::wrap(sigma2 * std::pow(y_scaling_factor, 2))),
+    Rcpp::Named("big_sigma", Rcpp::wrap(a_scaling_mat * big_sigma * a_scaling_mat)),
+    Rcpp::Named("tau", Rcpp::wrap(tau))
+  );
+};
+
+
+
 // Return auxiliary information as R list
+// Note: Rcpp::List::create seems to limit the number of items in the list
 Rcpp::List Pars::return_aux(){
   return Rcpp::List::create(
     Rcpp::Named("n_total", Rcpp::wrap(n_total)),
     Rcpp::Named("n_curve", Rcpp::wrap(n_curve)),
-    // Rcpp::Named("dim_a", Rcpp::wrap(dim_a)),
-    // Rcpp::Named("dim_w", Rcpp::wrap(dim_w)),
-    // Rcpp::Named("dim_alpha", Rcpp::wrap(dim_alpha)),
     Rcpp::Named("f_order", Rcpp::wrap(f_order)),
     Rcpp::Named("h_order", Rcpp::wrap(h_order)),
     Rcpp::Named("f_break_points", Rcpp::wrap(f_break_points)),
@@ -267,16 +282,13 @@ Rcpp::List Pars::return_aux(){
     Rcpp::Named("identity_cor_mat", Rcpp::wrap(identity_cor_mat)),
     Rcpp::Named("n_burn_saem", Rcpp::wrap(n_burn_saem)),
     Rcpp::Named("n_iterations", Rcpp::wrap(n_iterations)),
+    Rcpp::Named("mh_accept_rate_history", Rcpp::wrap(mh_accept_rate_history)),
     Rcpp::Named("n_burn_mcmc", Rcpp::wrap(n_burn_mcmc)),
     Rcpp::Named("n_core", Rcpp::wrap(n_core)),
     Rcpp::Named("need_centering", Rcpp::wrap(need_centering)),
-    Rcpp::Named("sa_step_size_mod", Rcpp::wrap(sa_step_size_mod)),
     Rcpp::Named("mh_accept_rate_lb", Rcpp::wrap(mh_accept_rate_lb)),
     Rcpp::Named("mh_accept_rate_ub", Rcpp::wrap(mh_accept_rate_ub)),
-    // Rcpp::Named("mh_accept_rate_table", Rcpp::wrap(mh_accept_rate_table)),
     Rcpp::Named("calibrate_period", Rcpp::wrap(calibrate_period)),
-    // Rcpp::Named("proposal_sigma", Rcpp::wrap(proposal_sigma)),
-    Rcpp::Named("mh_accept_rate_history", Rcpp::wrap(mh_accept_rate_history)),
     Rcpp::Named("proposal_sigma_history", Rcpp::wrap(proposal_sigma_history)),
     Rcpp::Named("saem_step_sizes", Rcpp::wrap(saem_step_sizes))
   );
@@ -290,6 +302,23 @@ Rcpp::List Pars::return_pars_tracker(){
     Rcpp::Named("alpha_track", Rcpp::wrap(alpha_track)),
     Rcpp::Named("sigma2_track", Rcpp::wrap(sigma2_track)),
     Rcpp::Named("big_sigma_track", Rcpp::wrap(big_sigma_track)),
+    Rcpp::Named("tau_track", Rcpp::wrap(tau_track))
+  );
+};
+
+
+
+// Return sequence of estimated parameters as R list
+Rcpp::List Pars::return_pars_tracker(double y_scaling_factor){
+  // Scaling matrices
+  arma::mat scaling_mat = arma::eye(4, 4);
+  scaling_mat(0, 0) = pow(y_scaling_factor, 2);
+  scaling_mat(1, 1) = y_scaling_factor;
+  scaling_mat(2, 2) = y_scaling_factor;
+  return Rcpp::List::create(
+    Rcpp::Named("alpha_track", Rcpp::wrap(alpha_track * y_scaling_factor)),
+    Rcpp::Named("sigma2_track", Rcpp::wrap(sigma2_track * std::pow(y_scaling_factor, 2))),
+    Rcpp::Named("big_sigma_track", Rcpp::wrap(scaling_mat * big_sigma_track)),
     Rcpp::Named("tau_track", Rcpp::wrap(tau_track))
   );
 };
