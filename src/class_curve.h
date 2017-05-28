@@ -1,5 +1,7 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadillo.h>
+// [[Rcpp::depends(RcppGSL)]]
+#include <RcppGSL.h>
 #include <vector>
 
 class Pars;
@@ -61,20 +63,23 @@ public:
   arma::vec current_log_dw;  // (dim_w - 1) x 1
 
   // Constructor
-  Curve(Rcpp::List curve_obj, Pars* pars, int id);
+  Curve(Rcpp::List data, Pars* pars, int id);
 
   // Methods
+  void initialize_h_basis_mat();
   void initialize_current_f_basis_mat();
+  void draw_new_a();
   void do_simulation_step();
   void center_current_a();
   void update_sufficient_statistics_approximates();
+  Rcpp::List return_list();
+  Rcpp::List return_list(double y_scaling_factor);
 
 private:
   void propose_new_w();
   void compute_proposed_warping_and_f_basis_mat();
   double compute_log_mh_ratio();
   void mh_accept_reject();
-  void draw_new_a();
 };
 
 #endif
