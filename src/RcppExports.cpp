@@ -8,15 +8,16 @@
 using namespace Rcpp;
 
 // saem_fit
-Rcpp::List saem_fit(Rcpp::List curve_list, Rcpp::List pars_list, Rcpp::List control_list);
-RcppExport SEXP mixedWarpedCurves2_saem_fit(SEXP curve_listSEXP, SEXP pars_listSEXP, SEXP control_listSEXP) {
+Rcpp::List saem_fit(Rcpp::List curve_list, Rcpp::List pars_list, Rcpp::List control_list, double y_scaling_factor);
+RcppExport SEXP mixedWarpedCurves2_saem_fit(SEXP curve_listSEXP, SEXP pars_listSEXP, SEXP control_listSEXP, SEXP y_scaling_factorSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< Rcpp::List >::type curve_list(curve_listSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type pars_list(pars_listSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type control_list(control_listSEXP);
-    rcpp_result_gen = Rcpp::wrap(saem_fit(curve_list, pars_list, control_list));
+    Rcpp::traits::input_parameter< double >::type y_scaling_factor(y_scaling_factorSEXP);
+    rcpp_result_gen = Rcpp::wrap(saem_fit(curve_list, pars_list, control_list, y_scaling_factor));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -47,7 +48,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"mixedWarpedCurves2_saem_fit", (DL_FUNC) &mixedWarpedCurves2_saem_fit, 3},
+    {"mixedWarpedCurves2_saem_fit", (DL_FUNC) &mixedWarpedCurves2_saem_fit, 4},
     {"mixedWarpedCurves2_test_oopc1", (DL_FUNC) &mixedWarpedCurves2_test_oopc1, 3},
     {"mixedWarpedCurves2_test_oopc", (DL_FUNC) &mixedWarpedCurves2_test_oopc, 3},
     {NULL, NULL, 0}

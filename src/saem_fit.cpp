@@ -4,8 +4,6 @@
 #include <RcppGSL.h>
 // [[Rcpp::depends(RcppProgress)]]
 #include <progress.hpp>
-// #include <omp.h>
-// // [[Rcpp::plugins(openmp)]]
 #include "class_curve.h"
 #include "class_pars.h"
 
@@ -16,7 +14,8 @@ Rcpp::List saem_fit(Rcpp::List curve_list,
                     Rcpp::List control_list,
                     double y_scaling_factor) {
 
-  // Special handling of f_break_points and h_break_points as an RcppGSL::Vector object to be propergated to the classes.
+  // Special handling of f_break_points and h_break_points as
+  // an RcppGSL::Vector object to be propergated to the classes
   RcppGSL::Vector f_break_points = Rcpp::as< RcppGSL::vector<double> >(control_list["f_knots"]);
   RcppGSL::Vector h_break_points = Rcpp::as< RcppGSL::vector<double> >(control_list["h_knots"]);
 
@@ -32,7 +31,7 @@ Rcpp::List saem_fit(Rcpp::List curve_list,
     ++id;
   }
 
-  // Initialize warped base shape basis evaluation matrices
+  // Initialize basis evaluation matrices
   for(std::vector<Curve>::iterator it = data->begin(); it != data->end(); ++it){
       it->initialize_h_basis_mat();
       it->initialize_current_f_basis_mat();
@@ -42,18 +41,19 @@ Rcpp::List saem_fit(Rcpp::List curve_list,
   int tick = std::max(1, (int) pars->n_iterations / 20);
   Progress p(0, false);
   double progress;
-  Rcpp::Rcout << "Test SAEM" << std::endl;
   for(int sim_idx = 0; sim_idx < pars->n_iterations; ++sim_idx){
     // Simulation step
     for(std::vector<Curve>::iterator it = data->begin(); it != data->end(); ++it){
       it->do_simulation_step();
     }
-    // Centering and Stochastic approximation step
+    // Centering and stochastic approximation step
     for(std::vector<Curve>::iterator it = data->begin(); it != data->end(); ++it){
       it->center_current_a();
       it->update_sufficient_statistics_approximates();
     }
+    // MH Calibration
     pars->track_mh_acceptance_and_calibrate_proposal();
+    // Maximization step
     pars->update_parameter_estimates(data);
     pars->track_estimates();
     pars->advance_iteration_counter();
@@ -61,13 +61,13 @@ Rcpp::List saem_fit(Rcpp::List curve_list,
       progress = (double) pars->saem_counter / pars->n_iterations * 100;
       Rprintf("%3.1f%%...", progress);
       // pars.print_estimates(10);
-
     }
     if (Progress::check_abort())
       return R_NilValue;
   }
+  Rcpp::Rcout << "(Done)" << std::endl;
 
-  // Return as R object
+  // Wrap up as R objects
   Rcpp::List curves(pars->n_curve);
   Rcpp::List fit;
   Rcpp::List aux;
@@ -79,9 +79,11 @@ Rcpp::List saem_fit(Rcpp::List curve_list,
   aux = pars->return_aux();
   pars_track = pars->return_pars_tracker(y_scaling_factor);
 
+  // Free memory
   free(data);
   free(pars);
 
+  // Return to R
   return(Rcpp::List::create(
       Rcpp::Named("fit", fit),
       Rcpp::Named("curves", curves),
