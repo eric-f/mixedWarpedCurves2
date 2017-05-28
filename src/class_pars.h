@@ -84,8 +84,10 @@ public:
   void track_estimates();
   void print_estimates(int interval);
   Rcpp::List return_pars();
+  Rcpp::List return_pars(double y_scaling_factor);
   Rcpp::List return_aux();
   Rcpp::List return_pars_tracker();
+  Rcpp::List return_pars_tracker(double y_scaling_factor);
 };
 
 #endif

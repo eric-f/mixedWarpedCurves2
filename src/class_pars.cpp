@@ -251,14 +251,29 @@ Rcpp::List Pars::return_pars(){
 
 
 
+// Return estimated parameters as R list
+Rcpp::List Pars::return_pars(double y_scaling_factor){
+  // Scaling matrices
+  arma::mat a_scaling_mat = arma::eye(2, 2);
+  a_scaling_mat(0, 0) = y_scaling_factor;
+  return Rcpp::List::create(
+    Rcpp::Named("mu", Rcpp::wrap(mu)),
+    Rcpp::Named("kappa", Rcpp::wrap(kappa)),
+    Rcpp::Named("alpha", Rcpp::wrap(alpha * y_scaling_factor)),
+    Rcpp::Named("sigma2", Rcpp::wrap(sigma2 * std::pow(y_scaling_factor, 2))),
+    Rcpp::Named("big_sigma", Rcpp::wrap(a_scaling_mat * big_sigma * a_scaling_mat)),
+    Rcpp::Named("tau", Rcpp::wrap(tau))
+  );
+};
+
+
+
 // Return auxiliary information as R list
+// Note: Rcpp::List::create seems to limit the number of items in the list
 Rcpp::List Pars::return_aux(){
   return Rcpp::List::create(
     Rcpp::Named("n_total", Rcpp::wrap(n_total)),
     Rcpp::Named("n_curve", Rcpp::wrap(n_curve)),
-    // Rcpp::Named("dim_a", Rcpp::wrap(dim_a)),
-    // Rcpp::Named("dim_w", Rcpp::wrap(dim_w)),
-    // Rcpp::Named("dim_alpha", Rcpp::wrap(dim_alpha)),
     Rcpp::Named("f_order", Rcpp::wrap(f_order)),
     Rcpp::Named("h_order", Rcpp::wrap(h_order)),
     Rcpp::Named("f_break_points", Rcpp::wrap(f_break_points)),
@@ -290,6 +305,23 @@ Rcpp::List Pars::return_pars_tracker(){
     Rcpp::Named("alpha_track", Rcpp::wrap(alpha_track)),
     Rcpp::Named("sigma2_track", Rcpp::wrap(sigma2_track)),
     Rcpp::Named("big_sigma_track", Rcpp::wrap(big_sigma_track)),
+    Rcpp::Named("tau_track", Rcpp::wrap(tau_track))
+  );
+};
+
+
+
+// Return sequence of estimated parameters as R list
+Rcpp::List Pars::return_pars_tracker(double y_scaling_factor){
+  // Scaling matrices
+  arma::mat scaling_mat = arma::eye(4, 4);
+  scaling_mat(0, 0) = pow(y_scaling_factor, 2);
+  scaling_mat(1, 1) = y_scaling_factor;
+  scaling_mat(2, 2) = y_scaling_factor;
+  return Rcpp::List::create(
+    Rcpp::Named("alpha_track", Rcpp::wrap(alpha_track * y_scaling_factor)),
+    Rcpp::Named("sigma2_track", Rcpp::wrap(sigma2_track * std::pow(y_scaling_factor, 2))),
+    Rcpp::Named("big_sigma_track", Rcpp::wrap(scaling_mat * big_sigma_track)),
     Rcpp::Named("tau_track", Rcpp::wrap(tau_track))
   );
 };

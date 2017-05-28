@@ -364,3 +364,32 @@ Rcpp::List Curve::return_list(){
     Rcpp::Named("sapprox_log_dw", Rcpp::wrap(sapprox_log_dw))
   );
 };
+
+
+
+// Return fitted curve, predicted warping functions and sufficient statistics
+Rcpp::List Curve::return_list(double y_scaling_factor){
+  // Scaled augmented_alpha vector
+  arma::vec tmp_alpha_aug_scaled(dim_alpha + 1, arma::fill::ones);
+  tmp_alpha_aug_scaled(0) = y_scaling_factor;
+  tmp_alpha_aug_scaled(arma::span(1, dim_alpha)) = common_pars->alpha * y_scaling_factor;
+  // Scaling matrices
+  arma::mat a_scaling_mat = arma::eye(2, 2);
+  a_scaling_mat(0, 0) = y_scaling_factor;
+  arma::mat f_basis_scaling_mat = arma::eye(dim_alpha + 1, dim_alpha + 1);
+  f_basis_scaling_mat(0, 0) = y_scaling_factor;
+  return Rcpp::List::create(
+    Rcpp::Named("curve_id", Rcpp::wrap(curve_id)),
+    Rcpp::Named("x", Rcpp::wrap(x)),
+    Rcpp::Named("y", Rcpp::wrap(y * y_scaling_factor)),
+    Rcpp::Named("warped_x", Rcpp::wrap(h_basis_mat * sapprox_w)),
+    Rcpp::Named("fitted_y", Rcpp::wrap(sapprox_aug_warped_f_basis_mat * tmp_alpha_aug_scaled)),
+    Rcpp::Named("sapprox_a", Rcpp::wrap(a_scaling_mat * sapprox_a)),
+    Rcpp::Named("sapprox_w", Rcpp::wrap(sapprox_w)),
+    Rcpp::Named("sapprox_warped_f_basis_mat", Rcpp::wrap(sapprox_warped_f_basis_mat)),
+    Rcpp::Named("sapprox_aug_warped_f_basis_mat", Rcpp::wrap(sapprox_aug_warped_f_basis_mat * f_basis_scaling_mat)),
+    Rcpp::Named("sapprox_hat_mat", Rcpp::wrap(f_basis_scaling_mat * sapprox_hat_mat * f_basis_scaling_mat)),
+    Rcpp::Named("sapprox_sigma_a", Rcpp::wrap(a_scaling_mat * sapprox_sigma_a)),
+    Rcpp::Named("sapprox_log_dw", Rcpp::wrap(sapprox_log_dw))
+  );
+};

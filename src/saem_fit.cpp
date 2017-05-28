@@ -13,7 +13,8 @@
 // [[Rcpp::export]]
 Rcpp::List saem_fit(Rcpp::List curve_list,
                     Rcpp::List pars_list,
-                    Rcpp::List control_list) {
+                    Rcpp::List control_list,
+                    double y_scaling_factor) {
 
   // Special handling of f_break_points and h_break_points as an RcppGSL::Vector object to be propergated to the classes.
   RcppGSL::Vector f_break_points = Rcpp::as< RcppGSL::vector<double> >(control_list["f_knots"]);
@@ -71,14 +72,12 @@ Rcpp::List saem_fit(Rcpp::List curve_list,
   Rcpp::List fit;
   Rcpp::List aux;
   Rcpp::List pars_track;
-
   for(int i = 0; i < pars->n_curve; ++i){
-    curves[i] = data->at(i).return_list();
+    curves[i] = data->at(i).return_list(y_scaling_factor);
   }
-
-  fit = pars->return_pars();
+  fit = pars->return_pars(y_scaling_factor);
   aux = pars->return_aux();
-  pars_track = pars->return_pars_tracker();
+  pars_track = pars->return_pars_tracker(y_scaling_factor);
 
   free(data);
   free(pars);
