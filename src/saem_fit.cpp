@@ -61,8 +61,6 @@ Rcpp::List saem_fit(Rcpp::List curve_list,
   int saem_idx = 0;
   int curve_idx = 0;
 
-#pragma omp parallel default(none) shared(tick, saem_idx, data, pars, progress, R_NilValue)
-{
   // SAEM loop
   for(saem_idx = 0; saem_idx < pars->n_iterations; ++saem_idx){
     // Simulation step
@@ -70,16 +68,11 @@ Rcpp::List saem_fit(Rcpp::List curve_list,
     for(curve_idx = 0; curve_idx < data->size(); ++curve_idx){
       data->at(curve_idx).do_simulation_step();
     }
-#pragma omp barrier
-#pragma omp parallel for
     // Centering and stochastic approximation step
     for(curve_idx = 0; curve_idx < data->size(); ++curve_idx){
       data->at(curve_idx).center_current_a();
       data->at(curve_idx).update_sufficient_statistics_approximates();
     }
-#pragma omp barrier
-#pragma omp critical
-{
     // MH Calibration
     pars->track_mh_acceptance_and_calibrate_proposal();
     // Maximization step
@@ -93,9 +86,7 @@ Rcpp::List saem_fit(Rcpp::List curve_list,
     }
     if (Progress::check_abort())
       saem_idx = data->size(); // Bump index to exit the loop
-}
   }
-}
   Rcpp::Rcout << "(Done)" << std::endl;
 
 
