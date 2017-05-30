@@ -3,6 +3,7 @@
 // [[Rcpp::depends(RcppGSL)]]
 #include <RcppGSL.h>
 #include <gsl/gsl_bspline.h>
+#include <random>
 
 class Pars;
 
@@ -63,7 +64,7 @@ public:
   arma::vec current_log_dw;  // (dim_w - 1) x 1
 
   // Constructor
-  Curve(Rcpp::List data, Pars* pars, int id);
+  Curve(Rcpp::List data, Pars* pars, int id, int seed);
 
   // Methods
   void initialize_h_basis_mat();
@@ -76,6 +77,9 @@ public:
   Rcpp::List return_list(double y_scaling_factor);
 
 private:
+  // random number generator
+  std::mt19937 gen;
+  std::uniform_real_distribution<double> dist;
   // Temporary variables
   gsl_vector *tmp_b_vec;
   gsl_bspline_workspace *tmp_bw;

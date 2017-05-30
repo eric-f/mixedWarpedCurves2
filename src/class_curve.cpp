@@ -8,7 +8,7 @@
 #include "util.h"
 
 // Constructor
-Curve::Curve(Rcpp::List data, Pars* pars, int id) : curve_id(id){
+Curve::Curve(Rcpp::List data, Pars* pars, int id, int seed) : curve_id(id){
 
   // Temporary variables
   arma::vec tmp_log_current_dw;
@@ -77,6 +77,10 @@ Curve::Curve(Rcpp::List data, Pars* pars, int id) : curve_id(id){
   current_hat_mat = arma::zeros(dim_alpha + 1, dim_alpha + 1);      // (dim_alpha + 1) x (dim_alpha + 1)
   current_sigma_a = arma::zeros(dim_a, dim_a);                      // dim_a x dim_a
   current_log_dw = arma::zeros(dim_w - 1);                          // (dim_w - 1) x 1
+
+  // Random number generator
+  std::mt19937 gen(seed);
+  std::uniform_real_distribution<double> dist(0, 1);
   // Temporary or working variables
   // ... for draw_new_a()
   tmp_f_mat = arma::ones(n_i, 2);
@@ -239,9 +243,8 @@ void Curve::compute_log_mh_ratio(){
 // Change: current_z, current_dw, current_w, current_warped_x, current_warped_f_basis_mat, common_pars
 // Note: Acceptances are tallied in the table of common_pars->mh_accept_rate_table
 void Curve::mh_accept_reject(){
-  // double u = sum(arma::randu(1));
-  double u = Rcpp::as<double>(Rcpp::wrap(Rcpp::runif(1)));
-  if (std::log(u) < compute_log_mh_ratio()) {
+  mh_randu = dist(gen);
+  if (std::log(mh_randu) < tmp_mh_log_accept_prob) {
     current_z = proposed_z;
     current_dw = proposed_dw;
     current_w = proposed_w;
