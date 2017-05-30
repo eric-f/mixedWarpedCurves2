@@ -49,16 +49,23 @@ Pars::Pars(Rcpp::List pars_list,
 
   // SA-MCMC Control parameters
   n_burn_saem = Rcpp::as<int>(control_list["n_saem_burn"]);
-  n_iterations = Rcpp::as<double>(control_list["n_saem_iter"]) + n_burn_saem;
+  n_iterations = Rcpp::as<double>(control_list["n_saem_iter"]) + 2 * n_burn_saem;
   n_burn_mcmc = Rcpp::as<int>(control_list["n_mcmc_burn"]);
   n_core = Rcpp::as<int>(control_list["n_core"]);
   need_centering = Rcpp::as<bool>(control_list["need_centering"]);
   sa_step_size_mod = Rcpp::as<double>(control_list["saem_step_seq_pow"]);
 
   // Generate step sizes
-  saem_step_sizes = arma::linspace(1, n_iterations, n_iterations) - n_burn_saem;
-  saem_step_sizes = arma::clamp(saem_step_sizes, 1, arma::datum::inf);
-  saem_step_sizes = arma::pow(saem_step_sizes, -sa_step_size_mod);
+  // Searching stage
+  saem_step_sizes = arma::ones(n_iterations);
+  // Zone in stage
+  saem_step_sizes(arma::span(n_burn_saem, 2 * n_burn_saem - 1)) = arma::pow(arma::linspace(1, n_burn_saem, n_burn_saem), -sa_step_size_mod);
+  // Averaging stage
+  saem_step_sizes(arma::span(2 * n_burn_saem, n_iterations - 1)) = arma::pow(arma::linspace(1, n_iterations - 2 * n_burn_saem, n_iterations - 2 * n_burn_saem), -sa_step_size_mod);
+
+  // saem_step_sizes = arma::linspace(1, n_iterations, n_iterations) - n_burn_saem;
+  // saem_step_sizes = arma::clamp(saem_step_sizes, 1, arma::datum::inf);
+  // saem_step_sizes = arma::pow(saem_step_sizes, -sa_step_size_mod);
 
   // Variable for Tuning proposal sigma over SAEM burning step
   proposal_sigma = Rcpp::as<double>(control_list["prop_sigma"]);
