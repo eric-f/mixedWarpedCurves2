@@ -2,7 +2,7 @@
 #include <RcppArmadillo.h>
 // [[Rcpp::depends(RcppGSL)]]
 #include <RcppGSL.h>
-#include <vector>
+#include <gsl/gsl_bspline.h>
 
 class Pars;
 
@@ -76,9 +76,40 @@ public:
   Rcpp::List return_list(double y_scaling_factor);
 
 private:
+  // Temporary variables
+  gsl_vector *tmp_b_vec;
+  gsl_bspline_workspace *tmp_bw;
+  // ... for draw_new_a()
+  arma::mat tmp_f_mat;
+  arma::vec tmp_mu_post;
+  arma::mat tmp_sigma_post;
+  //... for propose_new_w()
+  arma::vec tmp_dw;
+  // ... for compute_log_mh_ratio()
+  arma::vec proposed_warped_f;
+  arma::vec proposed_warped_y;
+  arma::vec current_warped_f;
+  arma::vec current_warped_y;
+  arma::vec proposed_residual_sum_of_squares;
+  arma::vec current_residual_sum_of_squares;
+  double proposed_minus_current_llk_data;
+  double current_llk_w;
+  double proposed_llk_w;
+  double log_jacobian_term;
+  // ... for mh_accept_reject()
+  double mh_randu;
+  // ... for center_current_a()
+  arma::mat centering_mat;
+  arma::vec mean_current_a;
+  // ... for update_sufficient_statistics_approximates()
+  double current_step_size;
+  arma::mat tmp_half_hat_mat;
+  // ...for mh_accept_reject()
+  double tmp_mh_log_accept_prob;
+
   void propose_new_w();
   void compute_proposed_warping_and_f_basis_mat();
-  double compute_log_mh_ratio();
+  void compute_log_mh_ratio();
   void mh_accept_reject();
 };
 
