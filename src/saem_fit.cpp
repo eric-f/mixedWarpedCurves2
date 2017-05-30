@@ -10,6 +10,7 @@
 // [[Rcpp::plugins(openmp)]]
 #include "class_curve.h"
 #include "class_pars.h"
+#include "ctime"
 
 //' Internal function for fitting the model by SAEM
 //'
@@ -24,6 +25,8 @@ Rcpp::List saem_fit(Rcpp::List curve_list,
                     Rcpp::List control_list,
                     double y_scaling_factor) {
 
+  int seed0 = std::time(0);
+
   // Special handling of f_break_points and h_break_points as
   // an RcppGSL::Vector object to be propergated to the classes
   RcppGSL::Vector f_break_points = Rcpp::as< RcppGSL::vector<double> >(control_list["f_knots"]);
@@ -37,8 +40,9 @@ Rcpp::List saem_fit(Rcpp::List curve_list,
   std::vector<Curve>* data = new std::vector<Curve>;
   int id = 0;
   for(Rcpp::List::iterator it = curve_list.begin(); it != curve_list.end(); ++it) {
-    data->push_back(Curve(*it, pars, id));
+    data->push_back(Curve(*it, pars, id, seed0));
     ++id;
+    ++seed0;
   }
 
   // Initialize basis evaluation matrices
