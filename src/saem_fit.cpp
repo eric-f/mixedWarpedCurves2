@@ -96,13 +96,13 @@ Rcpp::List saem_fit(Rcpp::List curve_list,
 
   // Wrap up as R objects
   Rcpp::List curves(pars->n_curve);
-  Rcpp::List fit;
+  Rcpp::List est_pars;
   Rcpp::List aux;
   Rcpp::List pars_track;
   for(int i = 0; i < pars->n_curve; ++i){
     curves[i] = data->at(i).return_list(y_scaling_factor);
   }
-  fit = pars->return_pars(y_scaling_factor);
+  est_pars = pars->return_pars(y_scaling_factor);
   aux = pars->return_aux();
   pars_track = pars->return_pars_tracker(y_scaling_factor);
 
@@ -112,7 +112,7 @@ Rcpp::List saem_fit(Rcpp::List curve_list,
 
   // Return to R
   return(Rcpp::List::create(
-      Rcpp::Named("fit", fit),
+      Rcpp::Named("pars", est_pars),
       Rcpp::Named("curves", curves),
       Rcpp::Named("aux", aux),
       Rcpp::Named("pars_track", pars_track)));
