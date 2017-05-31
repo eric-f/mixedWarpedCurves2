@@ -49,27 +49,21 @@ fsim <- function(y,
   ## --------------------------------------------------------------------------
   ## Initialize common auxiliary objects --------------------------------------
   ## --------------------------------------------------------------------------
-  cat("  Initialize common auxiliary objects ... ")
   saem_control$n_total = length(curve_id)
   saem_control$n_curve = length(unique(curve_id))
-  cat("(done)\n")
 
   ## --------------------------------------------------------------------------
   ## Convert data to list of curves -------------------------------------------
   ## --------------------------------------------------------------------------
-  cat("  Converting data to list of curves ... ")
   data_lst <- split(data, data$id)
-  cat("(done)\n")
 
   ## --------------------------------------------------------------------------
   ## --------------------------------------------------------------------------
   ## Iterate SAEM -------------------------------------------------------------
   ## --------------------------------------------------------------------------
   ## --------------------------------------------------------------------------
-  cat("Stochastic approximation EM algorithm ... \n")
   out <- saem_fit(data_lst, pars, saem_control, y_scaling_factor)
   out$y_scaling_factor = y_scaling_factor
-
 
   return(out)
 }
