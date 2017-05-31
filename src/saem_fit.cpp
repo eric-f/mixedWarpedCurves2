@@ -89,7 +89,7 @@ Rcpp::List saem_fit(Rcpp::List curve_list,
       // pars.print_estimates(10);
     }
     if (Progress::check_abort())
-      saem_idx = data->size(); // Bump index to exit the loop
+      saem_idx = pars->n_iterations; // Bump index to exit the loop
   }
   Rcpp::Rcout << "(Done)" << std::endl;
 
