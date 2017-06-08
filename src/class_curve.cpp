@@ -3,6 +3,7 @@
 // [[Rcpp::depends(RcppGSL)]]
 #include <RcppGSL.h>
 #include <gsl/gsl_bspline.h>
+#include <gsl/gsl_rng.h>
 #include "class_pars.h"
 #include "class_curve.h"
 #include "util.h"
@@ -79,8 +80,12 @@ Curve::Curve(Rcpp::List data, Pars* pars, int id, int seed) : curve_id(id){
   current_log_dw = arma::zeros(dim_w - 1);                          // (dim_w - 1) x 1
 
   // Random number generator
-  std::mt19937 gen(seed);
-  std::uniform_real_distribution<double> dist(0, 1);
+  // Rcpp::Rcout << "seed * curve_id = " << seed * curve_id << std::endl;
+  // std::mt19937 gen(seed * curve_id);
+  // std::uniform_real_distribution<double> dist(0, 1);
+  rng_gen = gsl_rng_alloc(gsl_rng_mt19937);
+  gsl_rng_set(rng_gen, seed + curve_id);
+
   // Temporary or working variables
   // ... for draw_new_a()
   tmp_f_mat = arma::ones(n_i, 2);
@@ -243,7 +248,7 @@ void Curve::compute_log_mh_ratio(){
 // Change: current_z, current_dw, current_w, current_warped_x, current_warped_f_basis_mat, common_pars
 // Note: Acceptances are tallied in the table of common_pars->mh_accept_rate_table
 void Curve::mh_accept_reject(){
-  mh_randu = dist(gen);
+  mh_randu = gsl_rng_uniform(rng_gen);
   if (std::log(mh_randu) < tmp_mh_log_accept_prob) {
     current_z = proposed_z;
     current_dw = proposed_dw;
@@ -396,3 +401,10 @@ Rcpp::List Curve::return_list(double y_scaling_factor){
     Rcpp::Named("sapprox_log_dw", Rcpp::wrap(sapprox_log_dw))
   );
 };
+
+
+
+void Curve::print_random_number(){
+  double u = gsl_rng_uniform(rng_gen);
+  Rcpp::Rcout << "Curve: " << curve_id << " random number: " << u << std::endl;
+}

@@ -3,7 +3,9 @@
 // [[Rcpp::depends(RcppGSL)]]
 #include <RcppGSL.h>
 #include <gsl/gsl_bspline.h>
-#include <random>
+#include <gsl/gsl_rng.h>
+// #include <random>
+// #include "ctime"
 
 class Pars;
 
@@ -75,11 +77,18 @@ public:
   void update_sufficient_statistics_approximates();
   Rcpp::List return_list();
   Rcpp::List return_list(double y_scaling_factor);
+  void print_random_number();
 
 private:
   // random number generator
-  std::mt19937 gen;
-  std::uniform_real_distribution<double> dist;
+  // std::mt19937 gen;
+  // std::uniform_real_distribution<double> dist;
+  // static std::mt19937 gen(std::time(0));
+  // static std::uniform_real_distribution<double> dist(0, 1);
+  gsl_rng * rng_gen;
+
+
+
   // Temporary variables
   gsl_vector *tmp_b_vec;
   gsl_bspline_workspace *tmp_bw;
