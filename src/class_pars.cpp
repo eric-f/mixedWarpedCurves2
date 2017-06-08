@@ -199,40 +199,26 @@ void Pars::update_parameter_estimates(std::vector<Curve>* mydata){
   tmp_alpha_aug(arma::span(1, dim_alpha)) = -alpha;
   sigma2 = arma::as_scalar(tmp_alpha_aug.t() * tmp_scaled_hat_mat * tmp_alpha_aug) * n_curve / n_total;
 
-  // Rcpp::Rcout << "Updating tau_1 with fixed kappa..." << std::endl;
-
   // Update tau_1 with fixed kappa (by Newton-Raphson)
   if(tmp_num_in_clusters(0) > 0){
     tmp_log_tau = std::log(tau_clusters(0));
-    // Rcpp::Rcout << "Cluster: " << 0 << std::endl;
-    // Rcpp::Rcout << "Previous tau: " << tau_clusters(0) << std::endl;
-    // Rcpp::Rcout << "Previous kappa: " << kappa_clusters.col(0) << std::endl;
-    // Rcpp::Rcout << "tmp_mean_log_dw: " <<  tmp_mean_log_dw.col(0) << std::endl;
     for (int i = 0; i < newton_max_iter; ++i) {
       newton_update_step = newton_step_dirichlet_fixed_mean(tmp_log_tau, kappa_clusters.col(0), tmp_mean_log_dw.col(0));
       tmp_log_tau -= newton_update_step;
-      // Rcpp::Rcout << "tau: " <<  exp(tmp_log_tau) << std::endl;
       if(std::abs(newton_update_step) < 1e-6) break; // convergence by step-size
     }
     tau_clusters(0) = std::exp(tmp_log_tau);
     if(tau_clusters(0) != tau_clusters(0)) throw("estimate of tau blown up...");
   }
-  // Rcpp::Rcout << "Updating tau_m with free kappa..." << std::endl;
-
 
   // Update tau_m with free kappa if num_cluster > 1
   if(num_clusters > 1){
     for(int cluster_idx = 1; cluster_idx < num_clusters; ++cluster_idx){
       if(tmp_num_in_clusters(cluster_idx) > 0){
         tmp_log_tau_kappa = log(tau_clusters(cluster_idx) * kappa_clusters.col(cluster_idx));
-        // Rcpp::Rcout << "Cluster: " << cluster_idx << std::endl;
-        // Rcpp::Rcout << "Previous tau: " << tau_clusters(cluster_idx) << std::endl;
-        // Rcpp::Rcout << "Previous kappa: " << kappa_clusters.col(cluster_idx) << std::endl;
-        // Rcpp::Rcout << "tmp_mean_log_dw: " <<  tmp_mean_log_dw.col(cluster_idx) << std::endl;
         for (int i = 0; i < newton_max_iter; ++i) {
           newton_update_step_vec = newton_step_dirichlet_free_mean(tmp_log_tau_kappa, tmp_mean_log_dw.col(cluster_idx));
           tmp_log_tau_kappa -= newton_update_step_vec;
-          // Rcpp::Rcout << "tau_kappa: " <<  exp(tmp_log_tau_kappa.t()) << std::endl;
           if(max(abs(newton_update_step_vec)) < 1e-6) break; // convergence by step-size
         }
         tmp_tau_kappa = exp(tmp_log_tau_kappa);
@@ -240,20 +226,13 @@ void Pars::update_parameter_estimates(std::vector<Curve>* mydata){
         kappa_clusters.col(cluster_idx) = tmp_tau_kappa / tau_clusters(cluster_idx);
       }
       else{
-        Rcpp::Rcout << "Empty cluster..." << std::endl;
+        Rcpp::Rcout << "Warning: Empty cluster..." << std::endl;
       }
     }
   }
 
-  // Rcpp::Rcout << "Updated kappa_clusters: " << kappa_clusters << std::endl;
-
-
-  // Rcpp::Rcout << "Updating p_clusters..." << std::endl;
-
   // Update p_clusters
   p_clusters = tmp_num_in_clusters / n_curve;
-
-  // Rcpp::Rcout << p_clusters.t() << std::endl;
 
   return;
 }
