@@ -228,7 +228,8 @@ void Pars::track_estimates(){
 //             mh_accept_rate_history
 // Changes: Nil
 void Pars::print_estimates(int interval){
-  if(saem_counter % interval == 0){
+  if(saem_counter % interval == 0 & saem_counter < n_iterations){
+    Rcpp::Rcout << std::endl;
     Rcpp::Rcout << "=================================" << std::endl;
     Rcpp::Rcout << "Iteration: " << std::endl << saem_counter << std::endl;
     Rcpp::Rcout << "Acceptance rate: " << mh_accept_rate_history(saem_counter) << std::endl;
