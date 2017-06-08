@@ -71,7 +71,6 @@ public:
   // Methods
   void initialize_h_basis_mat();
   void initialize_current_f_basis_mat();
-  void draw_new_a();
   void do_simulation_step();
   void center_current_a();
   void update_sufficient_statistics_approximates();
@@ -120,10 +119,12 @@ private:
   // ...for mh_accept_reject()
   double tmp_mh_log_accept_prob;
 
+  // Internal functions for the MH-within-Gibbs sampler
   void propose_new_w();
   void compute_proposed_warping_and_f_basis_mat();
   void compute_log_mh_ratio();
   void mh_accept_reject();
+  void draw_new_a();
 };
 
 #endif
