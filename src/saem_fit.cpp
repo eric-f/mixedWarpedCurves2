@@ -63,6 +63,7 @@ Rcpp::List saem_fit(Rcpp::List curve_list,
   int saem_idx = 0;
   int curve_idx = 0;
 
+  Rcpp::Rcout << "Entering SAEM loop..." << std::endl;
   // SAEM loop
   for(saem_idx = 0; saem_idx < pars->n_iterations; ++saem_idx){
     // Simulation step

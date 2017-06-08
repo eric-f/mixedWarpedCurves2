@@ -18,22 +18,28 @@ Pars::Pars(Rcpp::List pars_list,
   saem_counter = 0;
 
   // Fixed parameters
-  mu = Rcpp::as<arma::vec>(pars_list["mu"]);
-  kappa = Rcpp::as<arma::vec>(pars_list["kappa"]);
+  mu0 = Rcpp::as<arma::vec>(pars_list["mu"]);
+  kappa0 = Rcpp::as<arma::vec>(pars_list["kappa"]);
 
   // Shape parameter and variance of error term
   alpha = Rcpp::as<arma::vec>(pars_list["alpha"]);
   sigma2 = Rcpp::as<double>(pars_list["sigma2"]);
 
   // Dimension
-  dim_a = mu.size();
-  dim_w = kappa.size() + 1;
+  dim_a = mu0.size();
+  dim_w = kappa0.size() + 1;
   dim_alpha = alpha.size();
+  num_clusters = Rcpp::as<int>(pars_list["num_clusters"]);
 
   // Random effect parameters
   big_sigma = arma::eye(dim_a, dim_a) * 0.01;
   big_sigma_inverse = arma::eye(dim_a, dim_a) * 100;
-  tau = 1000;
+  tau_clusters = arma::ones(num_clusters) * 100;
+  p_clusters = arma::ones(num_clusters) / num_clusters;
+  kappa_clusters = arma::zeros(dim_w - 1, num_clusters);
+  for(int i = 0; i < num_clusters; ++i){
+    kappa_clusters.col(i) = kappa0;
+  }
 
   // Auxiliary variables
   n_total = Rcpp::as<int>(control_list["n_total"]);
@@ -79,12 +85,13 @@ Pars::Pars(Rcpp::List pars_list,
 
   // Temporary variables for centering step
   current_a_mat = arma::zeros(dim_a, n_curve);
+  current_m_vec = arma::zeros<arma::ivec>(n_curve);
 
   // Trackers
   alpha_track = arma::zeros(dim_alpha, n_iterations);
   sigma2_track = arma::zeros(n_iterations);
   big_sigma_track = arma::zeros(dim_a * dim_a, n_iterations);
-  tau_track = arma::zeros(n_iterations);
+  tau_clusters_track = arma::zeros(num_clusters, n_iterations);
 }
 
 
@@ -155,21 +162,28 @@ void Pars::update_parameter_estimates(std::vector<Curve>* mydata){
   // Temporary variables
   arma::mat tmp_mean_sigma_a(dim_a, dim_a, arma::fill::zeros);
   arma::mat tmp_scaled_hat_mat(dim_alpha + 1, dim_alpha + 1, arma::fill::zeros);
-  arma::vec tmp_sum_log_dw(dim_w-1, arma::fill::zeros);
   arma::mat tmp_mean_hat_By(dim_alpha, 1, arma::fill::zeros);
   arma::mat tmp_mean_hat_BB(dim_alpha, dim_alpha, arma::fill::zeros);
   arma::vec tmp_alpha_aug(dim_alpha + 1, arma::fill::ones);
+  arma::mat tmp_mean_log_dw(dim_w-1, num_clusters, arma::fill::zeros);
+  arma::vec tmp_num_in_clusters(num_clusters, arma::fill::zeros);
 
   int newton_max_iter = 1000;
   double newton_update_step;
-  arma::vec newton_workspace;
+  arma::vec newton_update_step_vec;
   double tmp_log_tau;
+  arma::vec tmp_log_tau_kappa;
+  arma::vec tmp_tau_kappa;
 
   // Gather sufficient statistics
   for(std::vector<Curve>::iterator it = mydata->begin(); it != mydata->end(); ++it){
     tmp_mean_sigma_a += it->sapprox_sigma_a / n_curve;
     tmp_scaled_hat_mat += it->sapprox_hat_mat / n_curve; // Divide by n_curve only to avoid overflow.
-    tmp_sum_log_dw += it->sapprox_log_dw;
+    tmp_mean_log_dw += it->sapprox_log_dw;
+    tmp_num_in_clusters += it->sapprox_cluster_pred;
+  }
+  for(int i = 0; i < tmp_mean_log_dw.n_cols; ++i){
+    tmp_mean_log_dw.col(i) = tmp_mean_log_dw.col(i) /  tmp_num_in_clusters(i);
   }
 
   // Update big_sigma
@@ -185,16 +199,62 @@ void Pars::update_parameter_estimates(std::vector<Curve>* mydata){
   tmp_alpha_aug(arma::span(1, dim_alpha)) = -alpha;
   sigma2 = arma::as_scalar(tmp_alpha_aug.t() * tmp_scaled_hat_mat * tmp_alpha_aug) * n_curve / n_total;
 
-  // Update tau (by Newton-Raphson)
-  tmp_log_tau = std::log(tau);
-  for (int i = 0; i < newton_max_iter; i++) {
-    newton_workspace = nllk_dirichlet(tmp_log_tau, tmp_sum_log_dw, n_curve, kappa);
-    newton_update_step = newton_workspace(1) / newton_workspace(2);
-    tmp_log_tau -= newton_update_step;
-    if(std::abs(newton_update_step) < 1e-6) break; // convergence by step-size
+  // Rcpp::Rcout << "Updating tau_1 with fixed kappa..." << std::endl;
+
+  // Update tau_1 with fixed kappa (by Newton-Raphson)
+  if(tmp_num_in_clusters(0) > 0){
+    tmp_log_tau = std::log(tau_clusters(0));
+    // Rcpp::Rcout << "Cluster: " << 0 << std::endl;
+    // Rcpp::Rcout << "Previous tau: " << tau_clusters(0) << std::endl;
+    // Rcpp::Rcout << "Previous kappa: " << kappa_clusters.col(0) << std::endl;
+    // Rcpp::Rcout << "tmp_mean_log_dw: " <<  tmp_mean_log_dw.col(0) << std::endl;
+    for (int i = 0; i < newton_max_iter; ++i) {
+      newton_update_step = newton_step_dirichlet_fixed_mean(tmp_log_tau, kappa_clusters.col(0), tmp_mean_log_dw.col(0));
+      tmp_log_tau -= newton_update_step;
+      // Rcpp::Rcout << "tau: " <<  exp(tmp_log_tau) << std::endl;
+      if(std::abs(newton_update_step) < 1e-6) break; // convergence by step-size
+    }
+    tau_clusters(0) = std::exp(tmp_log_tau);
+    if(tau_clusters(0) != tau_clusters(0)) throw("estimate of tau blown up...");
   }
-  tau = std::exp(tmp_log_tau);
-  if(tau != tau) throw("estimate of tau blown up...");
+  // Rcpp::Rcout << "Updating tau_m with free kappa..." << std::endl;
+
+
+  // Update tau_m with free kappa if num_cluster > 1
+  if(num_clusters > 1){
+    for(int cluster_idx = 1; cluster_idx < num_clusters; ++cluster_idx){
+      if(tmp_num_in_clusters(cluster_idx) > 0){
+        tmp_log_tau_kappa = log(tau_clusters(cluster_idx) * kappa_clusters.col(cluster_idx));
+        // Rcpp::Rcout << "Cluster: " << cluster_idx << std::endl;
+        // Rcpp::Rcout << "Previous tau: " << tau_clusters(cluster_idx) << std::endl;
+        // Rcpp::Rcout << "Previous kappa: " << kappa_clusters.col(cluster_idx) << std::endl;
+        // Rcpp::Rcout << "tmp_mean_log_dw: " <<  tmp_mean_log_dw.col(cluster_idx) << std::endl;
+        for (int i = 0; i < newton_max_iter; ++i) {
+          newton_update_step_vec = newton_step_dirichlet_free_mean(tmp_log_tau_kappa, tmp_mean_log_dw.col(cluster_idx));
+          tmp_log_tau_kappa -= newton_update_step_vec;
+          // Rcpp::Rcout << "tau_kappa: " <<  exp(tmp_log_tau_kappa.t()) << std::endl;
+          if(max(abs(newton_update_step_vec)) < 1e-6) break; // convergence by step-size
+        }
+        tmp_tau_kappa = exp(tmp_log_tau_kappa);
+        tau_clusters(cluster_idx) = sum(tmp_tau_kappa);
+        kappa_clusters.col(cluster_idx) = tmp_tau_kappa / tau_clusters(cluster_idx);
+      }
+      else{
+        Rcpp::Rcout << "Empty cluster..." << std::endl;
+      }
+    }
+  }
+
+  // Rcpp::Rcout << "Updated kappa_clusters: " << kappa_clusters << std::endl;
+
+
+  // Rcpp::Rcout << "Updating p_clusters..." << std::endl;
+
+  // Update p_clusters
+  p_clusters = tmp_num_in_clusters / n_curve;
+
+  // Rcpp::Rcout << p_clusters.t() << std::endl;
+
   return;
 }
 
@@ -218,7 +278,7 @@ void Pars::track_estimates(){
   alpha_track.col(saem_counter) = alpha;
   sigma2_track(saem_counter) = sigma2;
   big_sigma_track.col(saem_counter) = arma::vectorise(big_sigma);
-  tau_track(saem_counter) = tau;
+  tau_clusters_track.col(saem_counter) = tau_clusters;
 }
 
 
@@ -237,8 +297,12 @@ void Pars::print_estimates(int interval){
     Rcpp::Rcout << "big_sigma: " << arma::vectorise(big_sigma).t() << std::endl;
     Rcpp::Rcout << "alpha: " << alpha.t() << std::endl;
     Rcpp::Rcout << "sigma2: " << sigma2 << std::endl;
-    Rcpp::Rcout << "new tau: " << tau << std::endl;
+    Rcpp::Rcout << "kappa_clusters: " << kappa_clusters.t() << std::endl;
+    Rcpp::Rcout << "tau_clusters: " << tau_clusters.t() << std::endl;
+    Rcpp::Rcout << "p_clusters: " << p_clusters.t() << std::endl;
+    Rcpp::Rcout << "membership state: " << current_m_vec.t() << std::endl;
     Rcpp::Rcout << "=================================" << std::endl;
+    Rcpp::Rcout << std::endl;
   }
   return;
 }
@@ -248,12 +312,14 @@ void Pars::print_estimates(int interval){
 // Return estimated parameters as R list
 Rcpp::List Pars::return_pars(){
   return Rcpp::List::create(
-    Rcpp::Named("mu", Rcpp::wrap(mu)),
-    Rcpp::Named("kappa", Rcpp::wrap(kappa)),
+    Rcpp::Named("mu0", Rcpp::wrap(mu0)),
+    Rcpp::Named("kappa0", Rcpp::wrap(kappa0)),
     Rcpp::Named("alpha", Rcpp::wrap(alpha)),
     Rcpp::Named("sigma2", Rcpp::wrap(sigma2)),
     Rcpp::Named("big_sigma", Rcpp::wrap(big_sigma)),
-    Rcpp::Named("tau", Rcpp::wrap(tau))
+    Rcpp::Named("tau_clusters", Rcpp::wrap(tau_clusters)),
+    Rcpp::Named("p_clusters", Rcpp::wrap(p_clusters)),
+    Rcpp::Named("kappa_clusters", Rcpp::wrap(kappa_clusters))
   );
 };
 
@@ -265,12 +331,14 @@ Rcpp::List Pars::return_pars(double y_scaling_factor){
   arma::mat a_scaling_mat = arma::eye(2, 2);
   a_scaling_mat(0, 0) = y_scaling_factor;
   return Rcpp::List::create(
-    Rcpp::Named("mu", Rcpp::wrap(mu)),
-    Rcpp::Named("kappa", Rcpp::wrap(kappa)),
+    Rcpp::Named("mu0", Rcpp::wrap(mu0)),
+    Rcpp::Named("kappa0", Rcpp::wrap(kappa0)),
     Rcpp::Named("alpha", Rcpp::wrap(alpha * y_scaling_factor)),
     Rcpp::Named("sigma2", Rcpp::wrap(sigma2 * std::pow(y_scaling_factor, 2))),
     Rcpp::Named("big_sigma", Rcpp::wrap(a_scaling_mat * big_sigma * a_scaling_mat)),
-    Rcpp::Named("tau", Rcpp::wrap(tau))
+    Rcpp::Named("p_clusters", Rcpp::wrap(p_clusters)),
+    Rcpp::Named("tau_clusters", Rcpp::wrap(tau_clusters)),
+    Rcpp::Named("kappa_clusters", Rcpp::wrap(kappa_clusters))
   );
 };
 
@@ -310,7 +378,7 @@ Rcpp::List Pars::return_pars_tracker(){
     Rcpp::Named("alpha_track", Rcpp::wrap(alpha_track)),
     Rcpp::Named("sigma2_track", Rcpp::wrap(sigma2_track)),
     Rcpp::Named("big_sigma_track", Rcpp::wrap(big_sigma_track)),
-    Rcpp::Named("tau_track", Rcpp::wrap(tau_track))
+    Rcpp::Named("tau_clusters_track", Rcpp::wrap(tau_clusters_track))
   );
 };
 
@@ -327,6 +395,6 @@ Rcpp::List Pars::return_pars_tracker(double y_scaling_factor){
     Rcpp::Named("alpha_track", Rcpp::wrap(alpha_track * y_scaling_factor)),
     Rcpp::Named("sigma2_track", Rcpp::wrap(sigma2_track * std::pow(y_scaling_factor, 2))),
     Rcpp::Named("big_sigma_track", Rcpp::wrap(scaling_mat * big_sigma_track)),
-    Rcpp::Named("tau_track", Rcpp::wrap(tau_track))
+    Rcpp::Named("tau_clusters_track", Rcpp::wrap(tau_clusters_track))
   );
 };
