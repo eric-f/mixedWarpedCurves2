@@ -80,12 +80,13 @@ Rcpp::List saem_fit(Rcpp::List curve_list,
     // Maximization step
     pars->update_parameter_estimates(data);
     pars->track_estimates();
-    pars->advance_iteration_counter();
+    // Progress report
     if (pars->saem_counter % tick == 0) {
       progress = (double) pars->saem_counter / pars->n_iterations * 100;
       Rprintf("%3.1f%%...", progress);
-      // pars.print_estimates(10);
+      pars->print_estimates(1);
     }
+    pars->advance_iteration_counter();
     if (Progress::check_abort())
       saem_idx = pars->n_iterations; // Bump index to exit the loop
   }
