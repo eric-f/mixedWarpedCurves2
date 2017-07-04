@@ -8,8 +8,8 @@
 using namespace Rcpp;
 
 // saem_fit
-Rcpp::List saem_fit(Rcpp::List curve_list, Rcpp::List pars_list, Rcpp::List control_list, double y_scaling_factor);
-RcppExport SEXP mixedWarpedCurves2_saem_fit(SEXP curve_listSEXP, SEXP pars_listSEXP, SEXP control_listSEXP, SEXP y_scaling_factorSEXP) {
+Rcpp::List saem_fit(Rcpp::List curve_list, Rcpp::List pars_list, Rcpp::List control_list, double y_scaling_factor, bool trace);
+RcppExport SEXP mixedWarpedCurves2_saem_fit(SEXP curve_listSEXP, SEXP pars_listSEXP, SEXP control_listSEXP, SEXP y_scaling_factorSEXP, SEXP traceSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -17,13 +17,28 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Rcpp::List >::type pars_list(pars_listSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type control_list(control_listSEXP);
     Rcpp::traits::input_parameter< double >::type y_scaling_factor(y_scaling_factorSEXP);
-    rcpp_result_gen = Rcpp::wrap(saem_fit(curve_list, pars_list, control_list, y_scaling_factor));
+    Rcpp::traits::input_parameter< bool >::type trace(traceSEXP);
+    rcpp_result_gen = Rcpp::wrap(saem_fit(curve_list, pars_list, control_list, y_scaling_factor, trace));
     return rcpp_result_gen;
+END_RCPP
+}
+// test_gsl_rng_multithread
+void test_gsl_rng_multithread(Rcpp::List curve_list, Rcpp::List pars_list, Rcpp::List control_list, double y_scaling_factor);
+RcppExport SEXP mixedWarpedCurves2_test_gsl_rng_multithread(SEXP curve_listSEXP, SEXP pars_listSEXP, SEXP control_listSEXP, SEXP y_scaling_factorSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type curve_list(curve_listSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type pars_list(pars_listSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_list(control_listSEXP);
+    Rcpp::traits::input_parameter< double >::type y_scaling_factor(y_scaling_factorSEXP);
+    test_gsl_rng_multithread(curve_list, pars_list, control_list, y_scaling_factor);
+    return R_NilValue;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"mixedWarpedCurves2_saem_fit", (DL_FUNC) &mixedWarpedCurves2_saem_fit, 4},
+    {"mixedWarpedCurves2_saem_fit", (DL_FUNC) &mixedWarpedCurves2_saem_fit, 5},
+    {"mixedWarpedCurves2_test_gsl_rng_multithread", (DL_FUNC) &mixedWarpedCurves2_test_gsl_rng_multithread, 4},
     {NULL, NULL, 0}
 };
 

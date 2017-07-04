@@ -8,7 +8,7 @@ control_saem(n_saem_iter = 1, n_saem_burn = 1, n_mcmc_burn = 1,
   n_core = 1, saem_step_seq_pow = 1, prop_sigma = 0.01,
   need_centering = FALSE, accept_rate_lb = 0.17, accept_rate_ub = 0.33,
   accept_rate_window = 5, f_order = 4, h_order = 4, f_knots = NULL,
-  h_knots = NULL, f_n_knots = NULL, h_n_knots = NULL)
+  h_knots = NULL, f_n_knots = NULL, h_n_knots = NULL, seed = NULL)
 }
 \arguments{
 \item{n_saem_iter}{Number of EM iterations (in addition to SAEM burn)}

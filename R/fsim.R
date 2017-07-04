@@ -14,7 +14,9 @@
 fsim <- function(y,
                  obs_time,
                  curve_id,
-                 saem_control = control_saem()){
+                 n_clust=1,
+                 saem_control = control_saem(),
+                 trace=FALSE){
   ## --------------------------------------------------------------------------
   ## Scale reponses and pack data into data.frame
   ## --------------------------------------------------------------------------
@@ -44,6 +46,7 @@ fsim <- function(y,
   shape_ols <- lm(y~bfx-1, data=data)
   pars$alpha <- unname(shape_ols$coefficients)
   pars$sigma2 <- var(shape_ols$residuals)
+  pars$num_clusters <- n_clust
   # big_sigma and tau to be initialized in cpp...
 
   ## --------------------------------------------------------------------------
@@ -62,7 +65,7 @@ fsim <- function(y,
   ## Iterate SAEM -------------------------------------------------------------
   ## --------------------------------------------------------------------------
   ## --------------------------------------------------------------------------
-  out <- saem_fit(data_lst, pars, saem_control, y_scaling_factor)
+  out <- saem_fit(data_lst, pars, saem_control, y_scaling_factor, trace)
   out$y_scaling_factor = y_scaling_factor
 
   return(out)

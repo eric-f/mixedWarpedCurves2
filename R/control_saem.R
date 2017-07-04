@@ -33,7 +33,8 @@ control_saem <- function(n_saem_iter=1,
                          f_knots=NULL,
                          h_knots=NULL,
                          f_n_knots=NULL,
-                         h_n_knots=NULL){
+                         h_n_knots=NULL,
+                         seed=NULL){
   n_saem_iter = max(1, n_saem_iter)
   n_saem_burn = max(1, n_saem_burn)
   n_mcmc_burn = max(1, n_mcmc_burn)
@@ -68,7 +69,16 @@ control_saem <- function(n_saem_iter=1,
   if(any(range(h_knots) != c(0, 1)))
     stop("h_knots needs to be within 0 and 1")
 
-  list(n_saem_iter = n_saem_iter,
+  if(is.null(seed)){
+    seed <- round(runif(1, 1, 2^8))
+  }
+  else{
+    if(!is.integer(seed))
+      seed <- round(runif(1, 1, 2^8))
+  }
+
+  list(seed = seed,
+       n_saem_iter = n_saem_iter,
        n_saem_burn = n_saem_burn,
        n_mcmc_burn = n_mcmc_burn,
        n_core = n_core,
