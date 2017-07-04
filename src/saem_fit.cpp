@@ -22,7 +22,8 @@
 Rcpp::List saem_fit(Rcpp::List curve_list,
                     Rcpp::List pars_list,
                     Rcpp::List control_list,
-                    double y_scaling_factor) {
+                    double y_scaling_factor,
+                    bool trace) {
 
   int seed = Rcpp::as<int>(control_list["seed"]);
 
@@ -85,7 +86,9 @@ Rcpp::List saem_fit(Rcpp::List curve_list,
     if (pars->saem_counter % tick == 0) {
       progress = (double) pars->saem_counter / pars->n_iterations * 100;
       Rprintf("%3.1f%%...", progress);
-      pars->print_estimates(1);
+      if(trace){
+        pars->print_estimates(1);
+      }
     }
     pars->advance_iteration_counter();
     if (Progress::check_abort())

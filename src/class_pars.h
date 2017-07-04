@@ -73,8 +73,8 @@ public:
   arma::vec sigma2_track;
   arma::mat big_sigma_track;
   arma::mat tau_clusters_track;
-  arma::mat kappa_clusters_track;
-  arma::mat mcmc_m_track;
+  arma::cube kappa_clusters_track;
+  arma::imat sampled_m_track;
 
   // Constructor
   Pars(Rcpp::List pars_list,

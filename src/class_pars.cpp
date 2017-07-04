@@ -94,6 +94,8 @@ Pars::Pars(Rcpp::List pars_list,
   sigma2_track = arma::zeros(n_iterations);
   big_sigma_track = arma::zeros(dim_a * dim_a, n_iterations);
   tau_clusters_track = arma::zeros(num_clusters, n_iterations);
+  kappa_clusters_track = arma::zeros(dim_w - 1, num_clusters, n_iterations);
+  sampled_m_track = arma::zeros<arma::imat>(n_curve, n_iterations);
 }
 
 
@@ -260,6 +262,8 @@ void Pars::track_estimates(){
   sigma2_track(saem_counter) = sigma2;
   big_sigma_track.col(saem_counter) = arma::vectorise(big_sigma);
   tau_clusters_track.col(saem_counter) = tau_clusters;
+  kappa_clusters_track.slice(saem_counter) = kappa_clusters;
+  sampled_m_track.col(saem_counter) = current_m_vec;
 }
 
 
@@ -359,7 +363,9 @@ Rcpp::List Pars::return_pars_tracker(){
     Rcpp::Named("alpha_track", Rcpp::wrap(alpha_track)),
     Rcpp::Named("sigma2_track", Rcpp::wrap(sigma2_track)),
     Rcpp::Named("big_sigma_track", Rcpp::wrap(big_sigma_track)),
-    Rcpp::Named("tau_clusters_track", Rcpp::wrap(tau_clusters_track))
+    Rcpp::Named("tau_clusters_track", Rcpp::wrap(tau_clusters_track)),
+    Rcpp::Named("kappa_clusters_track", Rcpp::wrap(kappa_clusters_track)),
+    Rcpp::Named("sampled_m_track", Rcpp::wrap(sampled_m_track))
   );
 };
 
@@ -376,6 +382,8 @@ Rcpp::List Pars::return_pars_tracker(double y_scaling_factor){
     Rcpp::Named("alpha_track", Rcpp::wrap(alpha_track * y_scaling_factor)),
     Rcpp::Named("sigma2_track", Rcpp::wrap(sigma2_track * std::pow(y_scaling_factor, 2))),
     Rcpp::Named("big_sigma_track", Rcpp::wrap(scaling_mat * big_sigma_track)),
-    Rcpp::Named("tau_clusters_track", Rcpp::wrap(tau_clusters_track))
+    Rcpp::Named("tau_clusters_track", Rcpp::wrap(tau_clusters_track)),
+    Rcpp::Named("kappa_clusters_track", Rcpp::wrap(kappa_clusters_track)),
+    Rcpp::Named("sampled_m_track", Rcpp::wrap(sampled_m_track))
   );
 };

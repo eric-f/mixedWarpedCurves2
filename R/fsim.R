@@ -15,7 +15,8 @@ fsim <- function(y,
                  obs_time,
                  curve_id,
                  n_clust=1,
-                 saem_control = control_saem()){
+                 saem_control = control_saem(),
+                 trace=FALSE){
   ## --------------------------------------------------------------------------
   ## Scale reponses and pack data into data.frame
   ## --------------------------------------------------------------------------
@@ -64,7 +65,7 @@ fsim <- function(y,
   ## Iterate SAEM -------------------------------------------------------------
   ## --------------------------------------------------------------------------
   ## --------------------------------------------------------------------------
-  out <- saem_fit(data_lst, pars, saem_control, y_scaling_factor)
+  out <- saem_fit(data_lst, pars, saem_control, y_scaling_factor, trace)
   out$y_scaling_factor = y_scaling_factor
 
   return(out)
