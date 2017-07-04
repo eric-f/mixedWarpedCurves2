@@ -65,9 +65,11 @@ Pars::Pars(Rcpp::List pars_list,
   // Searching stage
   saem_step_sizes = arma::ones(n_iterations);
   // Zone in stage
-  saem_step_sizes(arma::span(n_burn_saem, 2 * n_burn_saem - 1)) = arma::pow(arma::linspace(1, n_burn_saem, n_burn_saem), -sa_step_size_mod);
+  saem_step_sizes(arma::span(n_burn_saem, 2 * n_burn_saem - 1)) =
+    arma::pow(arma::linspace(1, n_burn_saem, n_burn_saem), -sa_step_size_mod);
   // Averaging stage
-  saem_step_sizes(arma::span(2 * n_burn_saem, n_iterations - 1)) = arma::pow(arma::linspace(1, n_iterations - 2 * n_burn_saem, n_iterations - 2 * n_burn_saem), -sa_step_size_mod);
+  saem_step_sizes(arma::span(2 * n_burn_saem, n_iterations - 1)) =
+    arma::pow(arma::linspace(1, n_iterations - 2 * n_burn_saem, n_iterations - 2 * n_burn_saem), -sa_step_size_mod);
 
   // saem_step_sizes = arma::linspace(1, n_iterations, n_iterations) - n_burn_saem;
   // saem_step_sizes = arma::clamp(saem_step_sizes, 1, arma::datum::inf);
@@ -180,7 +182,7 @@ void Pars::update_parameter_estimates(std::vector<Curve>* mydata){
     tmp_mean_sigma_a += it->sapprox_sigma_a / n_curve;
     tmp_scaled_hat_mat += it->sapprox_hat_mat / n_curve; // Divide by n_curve only to avoid overflow.
     tmp_mean_log_dw += it->sapprox_log_dw;
-    tmp_num_in_clusters += it->sapprox_cluster_pred;
+    tmp_num_in_clusters += it->sapprox_cluster_membership;
   }
   for(int i = 0; i < tmp_mean_log_dw.n_cols; ++i){
     tmp_mean_log_dw.col(i) = tmp_mean_log_dw.col(i) /  tmp_num_in_clusters(i);
@@ -226,7 +228,7 @@ void Pars::update_parameter_estimates(std::vector<Curve>* mydata){
         kappa_clusters.col(cluster_idx) = tmp_tau_kappa / tau_clusters(cluster_idx);
       }
       else{
-        Rcpp::Rcout << "Warning: Empty cluster..." << std::endl;
+        // Rcpp::Rcout << "Warning: Empty cluster..." << std::endl;
       }
     }
   }
@@ -273,13 +275,13 @@ void Pars::print_estimates(int interval){
     Rcpp::Rcout << "Iteration: " << std::endl << saem_counter << std::endl;
     Rcpp::Rcout << "Acceptance rate: " << mh_accept_rate_history(saem_counter) << std::endl;
     Rcpp::Rcout << "Proposal sigma: " << proposal_sigma << std::endl;
-    Rcpp::Rcout << "big_sigma: " << arma::vectorise(big_sigma).t() << std::endl;
-    Rcpp::Rcout << "alpha: " << alpha.t() << std::endl;
+    Rcpp::Rcout << "big_sigma: " << std::endl << big_sigma << std::endl;
+    Rcpp::Rcout << "alpha: " << std::endl << alpha.t() << std::endl;
     Rcpp::Rcout << "sigma2: " << sigma2 << std::endl;
-    Rcpp::Rcout << "kappa_clusters: " << kappa_clusters.t() << std::endl;
-    Rcpp::Rcout << "tau_clusters: " << tau_clusters.t() << std::endl;
-    Rcpp::Rcout << "p_clusters: " << p_clusters.t() << std::endl;
-    Rcpp::Rcout << "membership state: " << current_m_vec.t() << std::endl;
+    Rcpp::Rcout << "kappa_clusters: " << std::endl << kappa_clusters.t() << std::endl;
+    Rcpp::Rcout << "tau_clusters: " << std::endl << tau_clusters.t() << std::endl;
+    Rcpp::Rcout << "p_clusters: " << std::endl << p_clusters.t() << std::endl;
+    Rcpp::Rcout << "membership state: " << std::endl << current_m_vec.t() << std::endl;
     Rcpp::Rcout << "=================================" << std::endl;
     Rcpp::Rcout << std::endl;
   }

@@ -63,8 +63,6 @@ Curve::Curve(Rcpp::List data, Pars* pars, int id, int seed) : curve_id(id){
   proposed_warped_x = arma::zeros(n_i); // n_i x 1
   proposed_warped_f_basis_mat = arma::zeros(n_i,dim_alpha);
 
-  // Rcpp::Rcout << "Suff. Stat...";
-
   // Stochastic approximated sufficient statistics
   sapprox_a = arma::zeros(dim_a);                                   // dim_a x 1
   sapprox_w = arma::zeros(dim_w);                                   // dim_w x 1
@@ -74,21 +72,19 @@ Curve::Curve(Rcpp::List data, Pars* pars, int id, int seed) : curve_id(id){
   sapprox_hat_mat = arma::zeros(dim_alpha + 1, dim_alpha + 1);      // (dim_alpha + 1) x (dim_alpha + 1)
   sapprox_sigma_a = arma::zeros(dim_a, dim_a);                      // dim_a x dim_a
   sapprox_log_dw = arma::zeros(dim_w - 1, num_clusters);            // (dim_w - 1) x 1
-  sapprox_cluster_pred = arma::zeros(num_clusters);                 // num_clusters x 1
+  sapprox_cluster_membership = arma::zeros(num_clusters);           // num_clusters x 1
 
   // Sufficient statistics based on the current MCMC draw
   current_aug_warped_f_basis_mat = arma::zeros(n_i, dim_alpha + 1); // n_i x (dim_alpha + 1)
   current_hat_mat = arma::zeros(dim_alpha + 1, dim_alpha + 1);      // (dim_alpha + 1) x (dim_alpha + 1)
   current_sigma_a = arma::zeros(dim_a, dim_a);                      // dim_a x dim_a
   current_log_dw = arma::zeros(dim_w - 1, num_clusters);            // (dim_w - 1) x num_clusters
-  current_cluster_pred = arma::zeros(num_clusters);                 // num_clusters x 1
-  current_cluster_pred(current_m) = 1;
+  current_cluster_membership = arma::zeros(num_clusters);           // num_clusters x 1
+  current_cluster_membership(current_m) = 1;
 
   // Random number generator
-  // Rcpp::Rcout << "seed * curve_id = " << seed * curve_id << std::endl;
-  // std::mt19937 gen(seed * curve_id);
-  // std::uniform_real_distribution<double> dist(0, 1);
   rng_gen = gsl_rng_alloc(gsl_rng_mt19937);
+  // rng_gen = gsl_rng_alloc(gsl_rng_taus2);
   gsl_rng_set(rng_gen, seed + curve_id);
 
   // Temporary or working variables
@@ -292,10 +288,6 @@ void Curve::draw_new_a(){
 // Depends on: current_dw
 // Changes: current_m;
 void Curve::draw_new_m(){
-  // Rcpp::Rcout << "Curve: " << curve_id << std::endl;
-  // Rcpp::Rcout << "In draw_new_m" << std::endl;
-  // Rcpp::Rcout << "current_m: " << current_m << std::endl;
-  // Rcpp::Rcout << "current_cluster_pred: " << current_cluster_pred.t() << std::endl;
   arma::vec tmp_pred_prob_clusters = arma::zeros(num_clusters);
   double u;
 
@@ -308,27 +300,18 @@ void Curve::draw_new_m(){
   tmp_pred_prob_clusters = tmp_pred_prob_clusters / sum(tmp_pred_prob_clusters);
 
   u = gsl_rng_uniform(rng_gen);
-  // Rcpp::Rcout << "tmp_pred_prob_clusters: " << tmp_pred_prob_clusters << "   ";
-  // Rcpp::Rcout << "u: " << u <<  "   ";
-  // current_m = num_clusters - 1;
   for(int cluster_idx = 0; cluster_idx < num_clusters; ++cluster_idx){
     if(u < tmp_pred_prob_clusters(cluster_idx)){
       current_m = cluster_idx;
-      // Rcpp::Rcout << "Assigned to group: " << cluster_idx <<  "   ";
       break;
     }
     else{
       u -= tmp_pred_prob_clusters(cluster_idx);
-      // Rcpp::Rcout << "u: " << u << std::endl;
     }
   }
-  current_cluster_pred.zeros();
-  current_cluster_pred(current_m) = 1;
+  current_cluster_membership.zeros();
+  current_cluster_membership(current_m) = 1;
   common_pars->current_m_vec(curve_id) = current_m;
-
-  // Rcpp::Rcout << "Leaving draw_new_m" << std::endl;
-  // Rcpp::Rcout << "current_m: " << current_m << std::endl;
-  // Rcpp::Rcout << "current_cluster_pred: " << current_cluster_pred.t() << std::endl;
   return;
 }
 
@@ -406,8 +389,8 @@ void Curve::update_sufficient_statistics_approximates(){
     current_step_size * current_sigma_a;
   sapprox_log_dw = (1 - current_step_size) * sapprox_log_dw +
     current_step_size * current_log_dw;
-  sapprox_cluster_pred = (1 - current_step_size) * sapprox_cluster_pred +
-    current_step_size * current_cluster_pred;
+  sapprox_cluster_membership = (1 - current_step_size) * sapprox_cluster_membership +
+    current_step_size * current_cluster_membership;
   return;
 }
 
@@ -430,7 +413,7 @@ Rcpp::List Curve::return_list(){
     Rcpp::Named("sapprox_hat_mat", Rcpp::wrap(sapprox_hat_mat)),
     Rcpp::Named("sapprox_sigma_a", Rcpp::wrap(sapprox_sigma_a)),
     Rcpp::Named("sapprox_log_dw", Rcpp::wrap(sapprox_log_dw)),
-    Rcpp::Named("sapprox_cluster_pred", Rcpp::wrap(sapprox_cluster_pred))
+    Rcpp::Named("sapprox_cluster_membership", Rcpp::wrap(sapprox_cluster_membership))
   );
 };
 
@@ -460,7 +443,7 @@ Rcpp::List Curve::return_list(double y_scaling_factor){
     Rcpp::Named("sapprox_hat_mat", Rcpp::wrap(f_basis_scaling_mat * sapprox_hat_mat * f_basis_scaling_mat)),
     Rcpp::Named("sapprox_sigma_a", Rcpp::wrap(a_scaling_mat * sapprox_sigma_a)),
     Rcpp::Named("sapprox_log_dw", Rcpp::wrap(sapprox_log_dw)),
-    Rcpp::Named("sapprox_cluster_pred", Rcpp::wrap(sapprox_cluster_pred))
+    Rcpp::Named("sapprox_cluster_membership", Rcpp::wrap(sapprox_cluster_membership))
   );
 };
 

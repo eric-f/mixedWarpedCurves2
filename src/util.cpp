@@ -123,9 +123,6 @@ double newton_step_dirichlet_fixed_mean (double log_tau,
   hessian = gradient +
     pow(tau, 2) * trigamma_tau -
     arma::as_scalar(arma::square(tau_kappa).t() * trigamma_tau_kappa);
-  // Rcpp::Rcout << "gradient: " << gradient << std::endl;
-  // Rcpp::Rcout << "hessian: " << hessian << std::endl;
-  // Rcpp::Rcout << "gradient / hessian: " << gradient / hessian << std::endl;
 
   return(gradient / hessian);
 }

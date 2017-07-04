@@ -60,13 +60,13 @@ public:
   arma::mat sapprox_hat_mat;                // (dim_alpha + 1) x (dim_alpha + 1) [C_mat]
   arma::mat sapprox_sigma_a;                // dim_a x dim_a                     [Sigma_a]
   arma::mat sapprox_log_dw;                 // (dim_w - 1) x num_clusters
-  arma::vec sapprox_cluster_pred;           // number_clusters x 1
+  arma::vec sapprox_cluster_membership;     // number_clusters x 1
 
   arma::mat current_aug_warped_f_basis_mat;   // n_i x (dim_alpha + 1)
   arma::mat current_hat_mat;                  // (dim_alpha + 1) x (dim_alpha + 1)
   arma::mat current_sigma_a;                  // dim_a x dim_a
   arma::mat current_log_dw;                   // (dim_w - 1) x num_clusters
-  arma::vec current_cluster_pred;             // number_clusters x 1
+  arma::vec current_cluster_membership;       // number_clusters x 1
 
   // Constructor
   Curve(Rcpp::List data, Pars* pars, int id, int seed);
