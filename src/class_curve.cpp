@@ -3,6 +3,7 @@
 // [[Rcpp::depends(RcppGSL)]]
 #include <RcppGSL.h>
 #include <gsl/gsl_bspline.h>
+#include <gsl/gsl_rng.h>
 #include "class_pars.h"
 #include "class_curve.h"
 #include "util.h"
@@ -23,10 +24,11 @@ Curve::Curve(Rcpp::List data, Pars* pars, int id, int seed) : curve_id(id){
 
   // Dimensions
   n_i = y.size();
-  dim_a = common_pars->mu.size();
-  dim_w = common_pars->kappa.size() + 1;
+  dim_a = common_pars->dim_a;
+  dim_w = common_pars->dim_w;
   dim_z = dim_w - 2;
   dim_alpha = common_pars->alpha.size(); // number of basis coefficients for the base curve
+  num_clusters = common_pars->num_clusters; // number of clusters
 
   // Basis Evaluation Matrix - warping function
   h_basis_mat = arma::zeros(n_i, dim_w);
@@ -38,8 +40,9 @@ Curve::Curve(Rcpp::List data, Pars* pars, int id, int seed) : curve_id(id){
 
 
   // MCMC working variables
-  current_a = common_pars->mu;
-  current_dw = common_pars->kappa;
+  current_m = rand() % num_clusters;
+  current_a = common_pars->mu0;
+  current_dw = common_pars->kappa0;
   current_w = arma::zeros(dim_w);
   current_w(arma::span(1,dim_w-1)) = arma::cumsum(current_dw);
   // Transform current_w back to euclidean space
@@ -60,8 +63,6 @@ Curve::Curve(Rcpp::List data, Pars* pars, int id, int seed) : curve_id(id){
   proposed_warped_x = arma::zeros(n_i); // n_i x 1
   proposed_warped_f_basis_mat = arma::zeros(n_i,dim_alpha);
 
-  // Rcpp::Rcout << "Suff. Stat...";
-
   // Stochastic approximated sufficient statistics
   sapprox_a = arma::zeros(dim_a);                                   // dim_a x 1
   sapprox_w = arma::zeros(dim_w);                                   // dim_w x 1
@@ -70,17 +71,22 @@ Curve::Curve(Rcpp::List data, Pars* pars, int id, int seed) : curve_id(id){
   sapprox_aug_warped_f_basis_mat = arma::zeros(n_i, dim_alpha + 1); // n_i x (dim_alpha + 1)
   sapprox_hat_mat = arma::zeros(dim_alpha + 1, dim_alpha + 1);      // (dim_alpha + 1) x (dim_alpha + 1)
   sapprox_sigma_a = arma::zeros(dim_a, dim_a);                      // dim_a x dim_a
-  sapprox_log_dw = arma::zeros(dim_w - 1);                          // (dim_w - 1) x 1
+  sapprox_log_dw = arma::zeros(dim_w - 1, num_clusters);            // (dim_w - 1) x 1
+  sapprox_cluster_membership = arma::zeros(num_clusters);           // num_clusters x 1
 
   // Sufficient statistics based on the current MCMC draw
   current_aug_warped_f_basis_mat = arma::zeros(n_i, dim_alpha + 1); // n_i x (dim_alpha + 1)
   current_hat_mat = arma::zeros(dim_alpha + 1, dim_alpha + 1);      // (dim_alpha + 1) x (dim_alpha + 1)
   current_sigma_a = arma::zeros(dim_a, dim_a);                      // dim_a x dim_a
-  current_log_dw = arma::zeros(dim_w - 1);                          // (dim_w - 1) x 1
+  current_log_dw = arma::zeros(dim_w - 1, num_clusters);            // (dim_w - 1) x num_clusters
+  current_cluster_membership = arma::zeros(num_clusters);           // num_clusters x 1
+  current_cluster_membership(current_m) = 1;
 
   // Random number generator
-  std::mt19937 gen(seed);
-  std::uniform_real_distribution<double> dist(0, 1);
+  rng_gen = gsl_rng_alloc(gsl_rng_mt19937);
+  // rng_gen = gsl_rng_alloc(gsl_rng_taus2);
+  gsl_rng_set(rng_gen, seed + curve_id);
+
   // Temporary or working variables
   // ... for draw_new_a()
   tmp_f_mat = arma::ones(n_i, 2);
@@ -109,6 +115,9 @@ Curve::Curve(Rcpp::List data, Pars* pars, int id, int seed) : curve_id(id){
   tmp_half_hat_mat = arma::zeros(n_i, dim_alpha + 1);
   // ...for mh_accept_reject()
   tmp_mh_log_accept_prob = 0.0;
+
+  // Feed back to pars
+  common_pars->current_m_vec(curve_id) = current_m;
 }
 
 
@@ -227,8 +236,8 @@ void Curve::compute_log_mh_ratio(){
     proposed_residual_sum_of_squares) / 2.0 / common_pars->sigma2;
 
   // Compute the dirichlet log-likelihood
-  proposed_llk_w = compute_llk_dw(proposed_dw, common_pars->tau * common_pars->kappa);
-  current_llk_w = compute_llk_dw(current_dw, common_pars->tau * common_pars->kappa);
+  proposed_llk_w = compute_llk_dw(proposed_dw, common_pars->tau_clusters(current_m) * common_pars->kappa_clusters.col(current_m));
+  current_llk_w = compute_llk_dw(current_dw, common_pars->tau_clusters(current_m) * common_pars->kappa_clusters.col(current_m));
 
   // Compute the log jacobian term for the MH ratio
   log_jacobian_term = arma::sum(arma::log(proposed_dw) - arma::log(current_dw));
@@ -243,7 +252,7 @@ void Curve::compute_log_mh_ratio(){
 // Change: current_z, current_dw, current_w, current_warped_x, current_warped_f_basis_mat, common_pars
 // Note: Acceptances are tallied in the table of common_pars->mh_accept_rate_table
 void Curve::mh_accept_reject(){
-  mh_randu = dist(gen);
+  mh_randu = gsl_rng_uniform(rng_gen);
   if (std::log(mh_randu) < tmp_mh_log_accept_prob) {
     current_z = proposed_z;
     current_dw = proposed_dw;
@@ -267,9 +276,42 @@ void Curve::draw_new_a(){
   tmp_sigma_post = inv(tmp_f_mat.t() * tmp_f_mat / common_pars->sigma2 +
     common_pars->big_sigma_inverse);
   tmp_mu_post = tmp_sigma_post * (tmp_f_mat.t() * y / common_pars->sigma2 +
-    common_pars->big_sigma_inverse * common_pars->mu);
+    common_pars->big_sigma_inverse * common_pars->mu0);
   current_a = tmp_mu_post + arma::chol(tmp_sigma_post).t() * arma::randn(dim_a);
   common_pars->current_a_mat.col(curve_id) = current_a;
+  return;
+}
+
+
+
+// Draw a new cluster membership (m) from the Gibbs sampler
+// Depends on: current_dw
+// Changes: current_m;
+void Curve::draw_new_m(){
+  arma::vec tmp_pred_prob_clusters = arma::zeros(num_clusters);
+  double u;
+
+  for(int cluster_idx = 0; cluster_idx < num_clusters; ++cluster_idx){
+    tmp_pred_prob_clusters(cluster_idx) = compute_llk_dw(current_dw,
+                           common_pars->tau_clusters(cluster_idx) *
+                             common_pars->kappa_clusters.col(cluster_idx));
+  }
+  tmp_pred_prob_clusters = exp(tmp_pred_prob_clusters) % common_pars->p_clusters;
+  tmp_pred_prob_clusters = tmp_pred_prob_clusters / sum(tmp_pred_prob_clusters);
+
+  u = gsl_rng_uniform(rng_gen);
+  for(int cluster_idx = 0; cluster_idx < num_clusters; ++cluster_idx){
+    if(u < tmp_pred_prob_clusters(cluster_idx)){
+      current_m = cluster_idx;
+      break;
+    }
+    else{
+      u -= tmp_pred_prob_clusters(cluster_idx);
+    }
+  }
+  current_cluster_membership.zeros();
+  current_cluster_membership(current_m) = 1;
+  common_pars->current_m_vec(curve_id) = current_m;
   return;
 }
 
@@ -283,6 +325,9 @@ void Curve::do_simulation_step(){
     compute_log_mh_ratio();
     mh_accept_reject();
     draw_new_a();
+    if(common_pars->saem_counter > common_pars->n_burn_saem){
+      draw_new_m();
+    }
   }
   return;
 }
@@ -325,8 +370,9 @@ void Curve::update_sufficient_statistics_approximates(){
   tmp_half_hat_mat = current_aug_warped_f_basis_mat;
   tmp_half_hat_mat.col(0) = y - current_a(0);
   current_hat_mat = tmp_half_hat_mat.t() * tmp_half_hat_mat;
-  current_sigma_a = (current_a - common_pars->mu) * (current_a - common_pars->mu).t();
-  current_log_dw = arma::log(current_dw);
+  current_sigma_a = (current_a - common_pars->mu0) * (current_a - common_pars->mu0).t();
+  current_log_dw.zeros();
+  current_log_dw.col(current_m) = arma::log(current_dw);
 
   // Update stochastic approximates
   sapprox_a = (1 - current_step_size) * sapprox_a +
@@ -343,6 +389,8 @@ void Curve::update_sufficient_statistics_approximates(){
     current_step_size * current_sigma_a;
   sapprox_log_dw = (1 - current_step_size) * sapprox_log_dw +
     current_step_size * current_log_dw;
+  sapprox_cluster_membership = (1 - current_step_size) * sapprox_cluster_membership +
+    current_step_size * current_cluster_membership;
   return;
 }
 
@@ -364,7 +412,8 @@ Rcpp::List Curve::return_list(){
     Rcpp::Named("sapprox_aug_warped_f_basis_mat", Rcpp::wrap(sapprox_aug_warped_f_basis_mat)),
     Rcpp::Named("sapprox_hat_mat", Rcpp::wrap(sapprox_hat_mat)),
     Rcpp::Named("sapprox_sigma_a", Rcpp::wrap(sapprox_sigma_a)),
-    Rcpp::Named("sapprox_log_dw", Rcpp::wrap(sapprox_log_dw))
+    Rcpp::Named("sapprox_log_dw", Rcpp::wrap(sapprox_log_dw)),
+    Rcpp::Named("sapprox_cluster_membership", Rcpp::wrap(sapprox_cluster_membership))
   );
 };
 
@@ -393,6 +442,14 @@ Rcpp::List Curve::return_list(double y_scaling_factor){
     Rcpp::Named("sapprox_aug_warped_f_basis_mat", Rcpp::wrap(sapprox_aug_warped_f_basis_mat * f_basis_scaling_mat)),
     Rcpp::Named("sapprox_hat_mat", Rcpp::wrap(f_basis_scaling_mat * sapprox_hat_mat * f_basis_scaling_mat)),
     Rcpp::Named("sapprox_sigma_a", Rcpp::wrap(a_scaling_mat * sapprox_sigma_a)),
-    Rcpp::Named("sapprox_log_dw", Rcpp::wrap(sapprox_log_dw))
+    Rcpp::Named("sapprox_log_dw", Rcpp::wrap(sapprox_log_dw)),
+    Rcpp::Named("sapprox_cluster_membership", Rcpp::wrap(sapprox_cluster_membership))
   );
 };
+
+
+
+void Curve::print_random_number(){
+  double u = gsl_rng_uniform(rng_gen);
+  Rcpp::Rcout << "Curve: " << curve_id << " random number: " << u << std::endl;
+}

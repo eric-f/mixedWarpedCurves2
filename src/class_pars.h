@@ -15,16 +15,19 @@ public:
   // Model Parameters
   arma::vec alpha;     // k_f x 1
   double sigma2;
-  arma::vec mu;        // 2 x 1
+  arma::vec mu0;        // 2 x 1
   arma::mat big_sigma; // 2 x 2
   arma::mat big_sigma_inverse; // 2 x 2
-  arma::vec kappa;     // (dim_w - 1) x 1
-  double tau;
+  arma::vec kappa0;     // (dim_w - 1) x 1
+  arma::mat kappa_clusters; // (dim_w - 1) x num_clusters
+  arma::vec p_clusters;     // num_clusters x 1
+  arma::vec tau_clusters;
 
   // Dimension
   int dim_a;
   int dim_w; // dim_w - 1 = dimension of kappa;
   int dim_alpha;
+  int num_clusters;
 
   // Auxiliary variables
   int n_total;                    // total number of data points
@@ -63,12 +66,15 @@ public:
 
   // Temporary variables for centering step
   arma::mat current_a_mat;
+  arma::ivec current_m_vec;
 
   // Tracker
   arma::mat alpha_track;
   arma::vec sigma2_track;
   arma::mat big_sigma_track;
-  arma::vec tau_track;
+  arma::mat tau_clusters_track;
+  arma::cube kappa_clusters_track;
+  arma::imat sampled_m_track;
 
   // Constructor
   Pars(Rcpp::List pars_list,

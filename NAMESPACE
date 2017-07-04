@@ -2,5 +2,6 @@
 
 export(control_saem)
 export(fsim)
+export(test_gsl_rng_multithread)
 importFrom(Rcpp,evalCpp)
 useDynLib(mixedWarpedCurves2)
