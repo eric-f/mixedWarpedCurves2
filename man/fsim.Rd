@@ -4,7 +4,8 @@
 \alias{fsim}
 \title{Fitting shape-invariant model with flexible time transformations}
 \usage{
-fsim(y, obs_time, curve_id, n_clust = 1, saem_control = control_saem())
+fsim(y, obs_time, curve_id, n_clust = 1, saem_control = control_saem(),
+  trace = FALSE)
 }
 \arguments{
 \item{y}{a vector of observed curves}
