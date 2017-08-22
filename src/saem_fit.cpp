@@ -50,6 +50,7 @@ Rcpp::List saem_fit(Rcpp::List curve_list,
       it->initialize_current_f_basis_mat();
   }
 
+
   // Setup multi-threading
 #ifdef _OPENMP
   omp_set_num_threads(pars->n_core);
@@ -81,6 +82,8 @@ Rcpp::List saem_fit(Rcpp::List curve_list,
     pars->track_mh_acceptance_and_calibrate_proposal();
     // Maximization step
     pars->update_parameter_estimates(data);
+    // Stochastic approximation to Fisher information matrix
+    pars->update_fisher_information_approx(data);
     pars->track_estimates();
     // Progress report
     if (pars->saem_counter % tick == 0) {
@@ -102,12 +105,14 @@ Rcpp::List saem_fit(Rcpp::List curve_list,
   Rcpp::List est_pars;
   Rcpp::List aux;
   Rcpp::List pars_track;
+  Rcpp::List se_info;
   for(int i = 0; i < pars->n_curve; ++i){
     curves[i] = data->at(i).return_list(y_scaling_factor);
   }
   est_pars = pars->return_pars(y_scaling_factor);
   aux = pars->return_aux();
   pars_track = pars->return_pars_tracker(y_scaling_factor);
+  se_info = pars->return_fisher_pieces(y_scaling_factor);
 
   // Free memory
   free(data);
@@ -118,7 +123,8 @@ Rcpp::List saem_fit(Rcpp::List curve_list,
       Rcpp::Named("pars", est_pars),
       Rcpp::Named("curves", curves),
       Rcpp::Named("aux", aux),
-      Rcpp::Named("pars_track", pars_track)));
+      Rcpp::Named("pars_track", pars_track),
+      Rcpp::Named("se_info", se_info)));
 
 }
 
