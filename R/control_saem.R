@@ -34,6 +34,7 @@ control_saem <- function(n_saem_iter=1,
                          h_knots=NULL,
                          f_n_knots=NULL,
                          h_n_knots=NULL,
+                         ind_amp=FALSE,
                          seed=NULL){
   n_saem_iter = max(1, n_saem_iter)
   n_saem_burn = max(1, n_saem_burn)
@@ -91,5 +92,6 @@ control_saem <- function(n_saem_iter=1,
        f_order = f_order,
        h_order = h_order,
        f_knots = f_knots,
-       h_knots = h_knots)
+       h_knots = h_knots,
+       ind_amp = ind_amp)
 }

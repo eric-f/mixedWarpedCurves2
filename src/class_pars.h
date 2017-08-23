@@ -43,6 +43,9 @@ public:
   arma::mat chol_centering_mat;   // (dim_w - 1) x (dim_w - 2), Cholesky decomposition of the I - 1/(dim_w - 1) * J matrix.
   arma::mat identity_cor_mat;     // dim_z x dim_z identity matrix (dim_z = dim_w - 2)
 
+  // Diagonal var-cov matrix for amplitude effect
+  bool diag_big_sigma;
+
   // SA-MCMC settings
   int n_core;
   int n_iterations;
@@ -76,6 +79,14 @@ public:
   arma::cube kappa_clusters_track;
   arma::imat sampled_m_track;
 
+  // Stochastic approximation of Fisher information
+  int num_pars;
+  arma::mat sapprox_H;
+  arma::vec sapprox_G;
+  arma::mat sapprox_C;
+  arma::mat current_H;
+  arma::vec current_G;
+
   // Constructor
   Pars(Rcpp::List pars_list,
        Rcpp::List control_list,
@@ -86,6 +97,7 @@ public:
   void generate_chol_centering_mat();
   void track_mh_acceptance_and_calibrate_proposal();
   void update_parameter_estimates(std::vector<Curve>* mydata);
+  void update_fisher_information_approx(std::vector<Curve>* mydata);
   void advance_iteration_counter();
   void track_estimates();
   void print_estimates(int interval);
@@ -94,6 +106,7 @@ public:
   Rcpp::List return_aux();
   Rcpp::List return_pars_tracker();
   Rcpp::List return_pars_tracker(double y_scaling_factor);
+  Rcpp::List return_fisher_pieces(double y_scaling_factor);
 };
 
 #endif

@@ -3,6 +3,8 @@
 // [[Rcpp::depends(RcppGSL)]]
 #include <RcppGSL.h>
 #include <gsl/gsl_bspline.h>
+// [[Rcpp::depends(BH)]]
+#include <boost/math/special_functions.hpp>
 #include "class_pars.h"
 #include "class_curve.h"
 #include "util.h"
@@ -53,6 +55,9 @@ Pars::Pars(Rcpp::List pars_list,
   chol_centering_mat = arma::zeros(dim_w - 1, dim_w - 2);
   identity_cor_mat = arma::eye(dim_w - 2, dim_w - 2);
 
+  // Diagonal var-cov matrix for amplitude effect
+  diag_big_sigma = Rcpp::as<bool>(control_list["ind_amp"]);
+
   // SA-MCMC Control parameters
   n_burn_saem = Rcpp::as<int>(control_list["n_saem_burn"]);
   n_iterations = Rcpp::as<double>(control_list["n_saem_iter"]) + 2 * n_burn_saem;
@@ -96,6 +101,16 @@ Pars::Pars(Rcpp::List pars_list,
   tau_clusters_track = arma::zeros(num_clusters, n_iterations);
   kappa_clusters_track = arma::zeros(dim_w - 1, num_clusters, n_iterations);
   sampled_m_track = arma::zeros<arma::imat>(n_curve, n_iterations);
+
+  // Stochastic approximation of Fisher information
+  num_pars = dim_alpha + 5 + (num_clusters - 1) * (dim_w - 1);
+  if(diag_big_sigma)
+    num_pars -= 1;
+  sapprox_H = arma::zeros(num_pars, num_pars);
+  sapprox_C = arma::zeros(num_pars, num_pars);
+  sapprox_G = arma::zeros(num_pars);
+  current_H = arma::zeros(num_pars, num_pars);
+  current_G = arma::zeros(num_pars);
 }
 
 
@@ -191,8 +206,14 @@ void Pars::update_parameter_estimates(std::vector<Curve>* mydata){
   }
 
   // Update big_sigma
-  big_sigma = tmp_mean_sigma_a;
-  big_sigma_inverse = arma::inv_sympd(big_sigma);
+  if(diag_big_sigma){
+    big_sigma = arma::diagmat(tmp_mean_sigma_a);
+    big_sigma_inverse = arma::inv(arma::diagmat(big_sigma));
+  }
+  else{
+    big_sigma = tmp_mean_sigma_a;
+    big_sigma_inverse = arma::inv_sympd(big_sigma);
+  }
 
   // Update alpha
   tmp_mean_hat_By = tmp_scaled_hat_mat(arma::span(1, dim_alpha), arma::span(0, 0));
@@ -238,6 +259,106 @@ void Pars::update_parameter_estimates(std::vector<Curve>* mydata){
   // Update p_clusters
   p_clusters = tmp_num_in_clusters / n_curve;
 
+  return;
+}
+
+
+
+// Update the stoastic approximation of the fisher information
+// Depends on:
+// Changes: SA_H, SA_G, SA_C
+void Pars::update_fisher_information_approx(std::vector<Curve>* mydata){
+  double current_step_size = saem_step_sizes(saem_counter);
+  // Temporary variables
+  arma::mat tmp_sum_sigma_a(dim_a, dim_a, arma::fill::zeros);
+  arma::mat tmp_sum_hat_mat(dim_alpha + 1, dim_alpha + 1, arma::fill::zeros);
+  arma::mat tmp_sum_hat_yy(1, 1, arma::fill::zeros);
+  arma::mat tmp_sum_hat_By(dim_alpha, 1, arma::fill::zeros);
+  arma::mat tmp_sum_hat_BB(dim_alpha, dim_alpha, arma::fill::zeros);
+  arma::mat tmp_sum_log_dw(dim_w-1, num_clusters, arma::fill::zeros);
+  arma::vec tmp_num_in_clusters(num_clusters, arma::fill::zeros);
+  double tmp_rss = 0;
+  arma::mat D2;
+  if(diag_big_sigma){
+    D2 = arma::zeros(4, 2);
+    D2(0, 0) = 1;
+    D2(3, 1) = 1;
+  }
+  else{
+    D2 = arma::zeros(4, 3);
+    D2(0, 0) = 1;
+    D2(1, 1) = 1;
+    D2(2, 1) = 1;
+    D2(3, 2) = 1;
+  }
+
+  if (num_clusters == 1) {
+    current_H.zeros();
+    current_G.zeros();
+
+    // Gather sufficient statistics
+    // (Duplicating code chunk in update_parameter_estimates)
+    for(std::vector<Curve>::iterator it = mydata->begin(); it != mydata->end(); ++it){
+      tmp_sum_sigma_a += it->current_sigma_a;
+      tmp_sum_hat_mat += it->current_hat_mat;
+      tmp_sum_log_dw += it->current_log_dw.col(0);
+    }
+    tmp_sum_hat_yy = tmp_sum_hat_mat(arma::span(0, 0), arma::span(0, 0));
+    tmp_sum_hat_By = tmp_sum_hat_mat(arma::span(1, dim_alpha), arma::span(0, 0));
+    tmp_sum_hat_BB = tmp_sum_hat_mat(arma::span(1, dim_alpha), arma::span(1, dim_alpha));
+
+    // Prep digamma and trigamma
+    arma::vec tau_kappa0 = tau_clusters(0) * kappa0;
+    arma::vec digamma_tau_kappa0(dim_w - 1, arma::fill::zeros);
+    arma::vec trigamma_tau_kappa0(dim_w - 1, arma::fill::zeros);
+    for (int i = 0; i < dim_w - 1; ++i) {
+      digamma_tau_kappa0(i) = boost::math::digamma(tau_kappa0(i));
+      trigamma_tau_kappa0(i) = boost::math::trigamma(tau_kappa0(i));
+    }
+
+    // G1: Gradient wrt alpha
+    current_G(arma::span(0, dim_alpha - 1)) = (tmp_sum_hat_By - tmp_sum_hat_BB * alpha) / sigma2;
+    // G2: Gradient wrt sigma2
+    tmp_rss = arma::as_scalar(tmp_sum_hat_yy - 2 * tmp_sum_hat_By.t() * alpha + alpha.t() * tmp_sum_hat_BB * alpha);
+    current_G(dim_alpha) =
+      (tmp_rss / pow(sigma2, 2) - n_total / sigma2) / 2;
+    // G3: Gradient wrt vech(big_sigma)
+    current_G(arma::span(dim_alpha + 1, num_pars - 2)) =
+      D2.t() * arma::vectorise(big_sigma_inverse * tmp_sum_sigma_a * big_sigma_inverse - n_curve * big_sigma_inverse) / 2;
+    // G4: Gradient wrt tau0
+    current_G(num_pars - 1) =
+      arma::as_scalar(kappa0.t() * tmp_sum_log_dw -
+      n_curve * (kappa0.t() * digamma_tau_kappa0 - boost::math::digamma(tau_clusters(0))));
+
+    // H1: Hessian alpha alpha
+    current_H(arma::span(0, dim_alpha - 1), arma::span(0, dim_alpha - 1)) =
+      - tmp_sum_hat_BB / sigma2;
+    // H2: Hessian alpha sigma2
+    current_H(arma::span(0, dim_alpha - 1), arma::span(dim_alpha, dim_alpha)) =
+      - (tmp_sum_hat_By - tmp_sum_hat_BB * alpha) / pow(sigma2, 2);
+    current_H(arma::span(dim_alpha, dim_alpha), arma::span(0, dim_alpha - 1)) =
+      current_H(arma::span(0, dim_alpha - 1), arma::span(dim_alpha, dim_alpha)).t();
+    // H3: Hessian sigma2 sigma2
+    current_H(dim_alpha, dim_alpha) =
+      (n_total / 2 / pow(sigma2, 2) - tmp_rss / pow(sigma2, 3));
+    // H4: Hessian big_sigma big_sigma
+    current_H(arma::span(dim_alpha + 1, num_pars - 2), arma::span(dim_alpha + 1, num_pars - 2)) =
+      - n_curve / 2 * D2.t() *
+      kron(big_sigma_inverse,
+           big_sigma_inverse * (2 * tmp_sum_sigma_a / n_curve - big_sigma) *
+             big_sigma_inverse) * D2;
+    // H5: Hessian tau0 tau0
+    current_H(num_pars - 1, num_pars - 1) =
+      - n_curve * arma::as_scalar(square(kappa0).t() * trigamma_tau_kappa0 -
+      boost::math::trigamma(tau_clusters(0)));
+
+    sapprox_H = (1 - current_step_size) * sapprox_H + current_step_size * current_H;
+    sapprox_G = (1 - current_step_size) * sapprox_G + current_step_size * current_G;
+    sapprox_C = (1 - current_step_size) * sapprox_C + current_step_size * current_G * current_G.t();
+  }
+  else{
+    // not implemented for num_cluster > 1
+  }
   return;
 }
 
@@ -377,7 +498,7 @@ Rcpp::List Pars::return_pars_tracker(double y_scaling_factor){
   arma::mat scaling_mat = arma::eye(4, 4);
   scaling_mat(0, 0) = pow(y_scaling_factor, 2);
   scaling_mat(1, 1) = y_scaling_factor;
-  scaling_mat(2, 2) = y_scaling_factor;
+  scaling_mat(2, 2) = 1;
   return Rcpp::List::create(
     Rcpp::Named("alpha_track", Rcpp::wrap(alpha_track * y_scaling_factor)),
     Rcpp::Named("sigma2_track", Rcpp::wrap(sigma2_track * std::pow(y_scaling_factor, 2))),
@@ -385,5 +506,33 @@ Rcpp::List Pars::return_pars_tracker(double y_scaling_factor){
     Rcpp::Named("tau_clusters_track", Rcpp::wrap(tau_clusters_track)),
     Rcpp::Named("kappa_clusters_track", Rcpp::wrap(kappa_clusters_track)),
     Rcpp::Named("sampled_m_track", Rcpp::wrap(sampled_m_track))
+  );
+};
+
+
+
+// Return sequence of estimated parameters as R list
+Rcpp::List Pars::return_fisher_pieces(double y_scaling_factor){
+  arma::mat scaling_mat(num_pars, num_pars, arma::fill::zeros);
+  arma::mat varcov(num_pars, num_pars);
+
+  // Construct rescaling matrix
+  for(int idx = 0; idx < dim_alpha; ++idx){
+    scaling_mat(idx, idx) = y_scaling_factor;
+  }
+  scaling_mat(dim_alpha, dim_alpha) = pow(y_scaling_factor, 2); // sigma2
+  scaling_mat(dim_alpha + 1, dim_alpha + 1) = pow(y_scaling_factor, 2); // big_sigma
+  scaling_mat(dim_alpha + 2, dim_alpha + 2) = y_scaling_factor;
+  scaling_mat(num_pars - 2, num_pars - 2) = 1;
+  scaling_mat(num_pars - 1, num_pars - 1) = 1; // tau_0
+
+  // Compute variance covariance matrix
+  varcov = scaling_mat * arma::inv_sympd(- sapprox_H + sapprox_C - sapprox_G * sapprox_G.t()) * scaling_mat;
+  return Rcpp::List::create(
+    Rcpp::Named("SA_H", Rcpp::wrap(sapprox_H)),
+    Rcpp::Named("SA_C", Rcpp::wrap(sapprox_C)),
+    Rcpp::Named("SA_G", Rcpp::wrap(sapprox_G)),
+    Rcpp::Named("scaling_mat", Rcpp::wrap(scaling_mat)),
+    Rcpp::Named("varcov", Rcpp::wrap(varcov))
   );
 };
