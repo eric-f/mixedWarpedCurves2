@@ -28,7 +28,7 @@ fsim_mixture_a_model <- function(y,
   data <- data.frame(y = y / y_scaling_factor,
                      x = obs_time,
                      id = curve_id,
-                     init_clust = q)
+                     init_clust = init_clust)
 
   ## --------------------------------------------------------------------------
   ## Initialize model parameters ----------------------------------------------
