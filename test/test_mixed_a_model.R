@@ -1,9 +1,10 @@
 rm(list=ls())
 gc()
 
-source("R/sim_warping_mixture.R")
+# source("R/sim_warping_mixture.R")
 library(mixedWarpedCurves2)
 library(ggplot2)
+library(gtools)
 
 kappa0 <- c(1,2,2,1)
 kappa0 <- kappa0 / sum(kappa0)
@@ -26,7 +27,7 @@ dat0 <- sim_warping_mixture(200, rep(1/3, 3),
                             sd_sh = 10, sd_sc=50, sd_err = 10)
 
 saem_control <- control_saem(n_saem_iter = 100,
-             n_saem_burn = 50,
+             n_saem_burn = 10,
              saem_step_seq_pow = 1,
              n_mcmc_burn = 5,
              n_core = 1,

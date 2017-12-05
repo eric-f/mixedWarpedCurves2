@@ -4,14 +4,19 @@
 #include <RcppGSL.h>
 #include <gsl/gsl_bspline.h>
 
-class Mixture_A_Curve;
+class Mixed_Shape_Curve;
 
 // class_pars.h
-#ifndef CLASS_MIXTURE_A_MODEL_H
-#define CLASS_MIXTURE_A_MODEL_H
+#ifndef CLASS_MIXED_SHAPE_MODEL_H
+#define CLASS_MIXED_SHAPE_MODEL_H
 
-class Mixture_A_Pars {
+class Mixed_Shape_Model {
 public:
+
+  // Counter
+  int saem_counter;
+  int clust_idx;
+
   // Model Parameters
   arma::mat alpha;             // k_f x num_clusters
   double sigma2;
@@ -29,7 +34,7 @@ public:
   int n_total;                    // total number of data points
   int n_curve;                    // number of curves
   int f_order;                    // order of the base curve spline
-  double y_scaling_factor;
+  double y_scl;
 
   // B-spline
   RcppGSL::Vector f_break_points; // boundary and internal knot locations of the base curve spline
@@ -39,7 +44,6 @@ public:
   // SA-MCMC settings
   int n_core;
   int n_iterations;
-  int saem_counter;
   int n_burn_saem;
   int calibrate_period;
   // SA
@@ -70,19 +74,19 @@ public:
   arma::vec current_G;
 
   // Constructor
-  Mixture_A_Pars(Rcpp::List pars_list,
-                 Rcpp::List control_list,
-                 RcppGSL::Vector f_break_points_r);
+  Mixed_Shape_Model(Rcpp::List pars_list,
+                    Rcpp::List control_list,
+                    double y_scl_r,
+                    RcppGSL::Vector f_break_points_r);
 
   // Method
-  void update_parameter_estimates(std::vector<Mixture_A_Curve*>* mydata);
+  void update_parameter_estimates(std::vector<Mixed_Shape_Curve*>* mydata);
   void advance_iteration_counter();
   void track_estimates();
   void print_estimates(int interval);
-  Rcpp::List return_pars(double y_scaling_factor);
+  Rcpp::List return_pars();
   Rcpp::List return_aux();
-  Rcpp::List return_pars_tracker(double y_scaling_factor);
-  Rcpp::List return_fisher_pieces(double y_scaling_factor);
+  Rcpp::List return_pars_tracker();
 };
 
 #endif

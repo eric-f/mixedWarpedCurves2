@@ -3,19 +3,18 @@
 // [[Rcpp::depends(RcppGSL)]]
 #include <RcppGSL.h>
 #include <gsl/gsl_bspline.h>
-// [[Rcpp::depends(BH)]]
-#include <boost/math/special_functions.hpp>
-#include "class_mixture_a_model.h"
-#include "class_mixture_a_curve.h"
-#include "util.h"
+#include "class_mixed_shape_model.h"
+#include "class_mixed_shape_curve.h"
 
 // Constructor
-Mixture_A_Pars::Mixture_A_Pars(Rcpp::List pars_list,
-                               Rcpp::List control_list,
-                               RcppGSL::Vector f_break_points_r) : f_break_points(f_break_points_r){
+Mixed_Shape_Model::Mixed_Shape_Model(Rcpp::List pars_list,
+                                     Rcpp::List control_list,
+                                     double y_scl_r,
+                                     RcppGSL::Vector f_break_points_r) : y_scl(y_scl_r), f_break_points(f_break_points_r){
 
   // Iteration counter
   saem_counter = 0;
+  clust_idx = 0;
 
   // Fixed parameters
   mu0 = Rcpp::as<arma::vec>(pars_list["mu"]);
@@ -46,7 +45,6 @@ Mixture_A_Pars::Mixture_A_Pars(Rcpp::List pars_list,
   n_iterations = Rcpp::as<double>(control_list["n_saem_iter"]) + 2 * n_burn_saem;
   n_burn_mcmc = Rcpp::as<int>(control_list["n_mcmc_burn"]);
   n_core = Rcpp::as<int>(control_list["n_core"]);
-  need_centering = Rcpp::as<bool>(control_list["need_centering"]);
   sa_step_size_mod = Rcpp::as<double>(control_list["saem_step_seq_pow"]);
 
   // Generate step sizes
@@ -88,7 +86,7 @@ Mixture_A_Pars::Mixture_A_Pars(Rcpp::List pars_list,
 // Gather stochastic approximates of the sufficient statistics and perform an M-step
 // Depends on:
 // Changes:
-void Mixture_A_Pars::update_parameter_estimates(std::vector<Mixture_A_Curve*>* mydata){
+void Mixed_Shape_Model::update_parameter_estimates(std::vector<Mixed_Shape_Curve*>* mydata){
   // Rcpp::Rcout << "update_parameter_estimates" << std::endl;
   // Reset parameters
   XtX.zeros();
@@ -98,7 +96,7 @@ void Mixture_A_Pars::update_parameter_estimates(std::vector<Mixture_A_Curve*>* m
   sigma2 = 0.0;
 
   // Gather sufficient statistics
-  for(std::vector<Mixture_A_Curve*>::iterator it = mydata->begin(); it != mydata->end(); ++it){
+  for(std::vector<Mixed_Shape_Curve*>::iterator it = mydata->begin(); it != mydata->end(); ++it){
     XtX += (*it)->SS_XtX;
     XtY += (*it)->SS_XtY;
     p_clusters += (*it)->SS_post_prob / n_curve;
@@ -110,7 +108,7 @@ void Mixture_A_Pars::update_parameter_estimates(std::vector<Mixture_A_Curve*>* m
   }
 
   // Update alpha (by cluster)
-  for(int clust_idx = 0; clust_idx < num_clusters; ++clust_idx){
+  for(clust_idx = 0; clust_idx < num_clusters; ++clust_idx){
     alpha.col(clust_idx) = arma::solve(XtX.slice(clust_idx), XtY.col(clust_idx));
   }
 
@@ -122,7 +120,7 @@ void Mixture_A_Pars::update_parameter_estimates(std::vector<Mixture_A_Curve*>* m
 // Increase saem iteration counter
 // Depends on: Nil
 // Changes: saem_counter
-void Mixture_A_Pars::advance_iteration_counter(){
+void Mixed_Shape_Model::advance_iteration_counter(){
   ++saem_counter;
   return;
 }
@@ -132,7 +130,7 @@ void Mixture_A_Pars::advance_iteration_counter(){
 // Store current estiamtes for tracking
 // Depends on: saem_counter, alpha, sigma2, big_sigma, tau
 // Changes: alpha_track, sigma2_track, big_sigma_track, tau_track
-void Mixture_A_Pars::track_estimates(){
+void Mixed_Shape_Model::track_estimates(){
   // Track estimates
   alpha_track.slice(saem_counter) = alpha;
   sigma2_track(saem_counter) = sigma2;
@@ -147,7 +145,7 @@ void Mixture_A_Pars::track_estimates(){
 // Depends on: saem_counter, proposal_sigma, big_sigma, alpha, sigma2, tau
 //             mh_accept_rate_history
 // Changes: Nil
-void Mixture_A_Pars::print_estimates(int interval){
+void Mixed_Shape_Model::print_estimates(int interval){
   if(saem_counter % interval == 0 & saem_counter < n_iterations){
     Rcpp::Rcout << std::endl;
     Rcpp::Rcout << "=================================" << std::endl;
@@ -166,14 +164,14 @@ void Mixture_A_Pars::print_estimates(int interval){
 
 
 // Return estimated parameters as R list
-Rcpp::List Mixture_A_Pars::return_pars(double y_scaling_factor){
+Rcpp::List Mixed_Shape_Model::return_pars(){
   // Scaling matrices
   arma::mat a_scaling_mat = arma::eye(2, 2);
-  a_scaling_mat(0, 0) = y_scaling_factor;
+  a_scaling_mat(0, 0) = y_scl;
   return Rcpp::List::create(
     Rcpp::Named("mu0", Rcpp::wrap(mu0)),
-    Rcpp::Named("alpha", Rcpp::wrap(alpha * y_scaling_factor)),
-    Rcpp::Named("sigma2", Rcpp::wrap(sigma2 * std::pow(y_scaling_factor, 2))),
+    Rcpp::Named("alpha", Rcpp::wrap(alpha * y_scl)),
+    Rcpp::Named("sigma2", Rcpp::wrap(sigma2 * std::pow(y_scl, 2))),
     Rcpp::Named("amp_sigma", Rcpp::wrap(a_scaling_mat * amp_sigma * a_scaling_mat)),
     Rcpp::Named("p_clusters", Rcpp::wrap(p_clusters))
   );
@@ -183,7 +181,7 @@ Rcpp::List Mixture_A_Pars::return_pars(double y_scaling_factor){
 
 // Return auxiliary information as R list
 // Note: Rcpp::List::create seems to limit the number of items in the list
-Rcpp::List Mixture_A_Pars::return_aux(){
+Rcpp::List Mixed_Shape_Model::return_aux(){
   return Rcpp::List::create(
     Rcpp::Named("n_total", Rcpp::wrap(n_total)),
     Rcpp::Named("n_curve", Rcpp::wrap(n_curve)),
@@ -193,7 +191,6 @@ Rcpp::List Mixture_A_Pars::return_aux(){
     Rcpp::Named("n_iterations", Rcpp::wrap(n_iterations)),
     Rcpp::Named("n_burn_mcmc", Rcpp::wrap(n_burn_mcmc)),
     Rcpp::Named("n_core", Rcpp::wrap(n_core)),
-    Rcpp::Named("need_centering", Rcpp::wrap(need_centering)),
     Rcpp::Named("saem_step_sizes", Rcpp::wrap(saem_step_sizes))
   );
 };
@@ -201,14 +198,14 @@ Rcpp::List Mixture_A_Pars::return_aux(){
 
 
 // Return sequence of estimated parameters as R list
-Rcpp::List Mixture_A_Pars::return_pars_tracker(double y_scaling_factor){
+Rcpp::List Mixed_Shape_Model::return_pars_tracker(){
   // Scaling matrices
   arma::mat scaling_mat = arma::eye(2, 2);
-  scaling_mat(0, 0) = pow(y_scaling_factor, 2);
+  scaling_mat(0, 0) = pow(y_scl, 2);
   scaling_mat(1, 1) = 1;
   return Rcpp::List::create(
-    Rcpp::Named("alpha_track", Rcpp::wrap(alpha_track * y_scaling_factor)),
-    Rcpp::Named("sigma2_track", Rcpp::wrap(sigma2_track * std::pow(y_scaling_factor, 2))),
+    Rcpp::Named("alpha_track", Rcpp::wrap(alpha_track * y_scl)),
+    Rcpp::Named("sigma2_track", Rcpp::wrap(sigma2_track * std::pow(y_scl, 2))),
     Rcpp::Named("amp_sigma_track", Rcpp::wrap(scaling_mat * amp_sigma_track)),
     Rcpp::Named("p_clusters_track", Rcpp::wrap(p_clusters_track)),
     Rcpp::Named("sampled_m_track", Rcpp::wrap(sampled_m_track))
@@ -216,8 +213,3 @@ Rcpp::List Mixture_A_Pars::return_pars_tracker(double y_scaling_factor){
 };
 
 
-
-// Return sequence of estimated parameters as R list
-Rcpp::List Mixture_A_Pars::return_fisher_pieces(double y_scaling_factor){
-  throw;
-};
