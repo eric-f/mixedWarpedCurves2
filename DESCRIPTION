@@ -16,7 +16,8 @@ Imports:
     RcppArmadillo (>= 0.7.400.2.0),
     RcppGSL (>= 0.3.1),
     BH (>= 1.62.0),
-    RcppProgress (>= 0.2.1)
+    RcppProgress (>= 0.2.1),
+    gtools
 Depends:
     splines
 LinkingTo:
