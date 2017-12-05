@@ -1,7 +1,7 @@
 rm(list=ls())
 gc()
 
-source("R/sim_warping_mixture.R")
+# source("R/sim_warping_mixture.R")
 library(mixedWarpedCurves2)
 library(plyr)
 library(dplyr)
@@ -43,20 +43,21 @@ dat0 <- sim_warping_mixture(200, rep(1/3, 3),
                             sd_sh = 10, sd_sc=50, sd_err = 10)
 
 
-ggplot(dat0) +
-  geom_line(aes(x=x, y=warped_x, group=id, col=clust),
-            show.legend = FALSE)
+# ggplot(dat0) +
+#   geom_line(aes(x=x, y=warped_x, group=id, col=clust),
+#             show.legend = FALSE)
+#
+# ggplot(dat0) +
+#   geom_line(aes(x=x, y=y, group=id, col=clust),
+#             show.legend = FALSE)
 
-ggplot(dat0) +
-  geom_line(aes(x=x, y=y, group=id, col=clust),
-            show.legend = FALSE)
-
-
+init_clust <- as.integer(dat0$clust[dat0$x==0]) - 1
 system.time(my_fit <-
               mixedWarpedCurves2::fsim_unimodal(
                 y = dat0$y,
                 obs_time = dat0$x,
                 curve_id = dat0$id,
+                init_clust = init_clust,
                 n_clust = 3,
                 saem_control = control_saem(n_saem_iter = 1000,
                                             n_saem_burn = 100,
@@ -71,7 +72,8 @@ system.time(my_fit <-
                                             h_n_knots = 1+4),
                 trace = FALSE))
 
-
+my_fit$pars
+my_fit$pars$kappa_clusters
 
 mixed_warping_fitted <- ldply(my_fit$curves, function(crv){
   data.frame(id = crv$curve_id,
@@ -91,7 +93,7 @@ mixed_warping_coef <- laply(my_fit$curves, function(crv){
 })
 mixed_warping_fitted$cluster_km <-
   as.factor(rep(kmeans(mixed_warping_coef, 3, nstart = 20)$cluster,
-                each=201))
+                each=1001))
 
 
 # ggplot(dat0) +

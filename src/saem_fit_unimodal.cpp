@@ -73,8 +73,8 @@ Rcpp::List saem_fit_unimodal(Rcpp::List curve_list,
     }
     // Initialize clustering configuration by K-mean
     if(pars->saem_counter == pars->n_burn_saem){
-      pars->initialize_clustering_with_kmeans(data);
-      // pars->initialize_clustering_with_user_inputs(data);
+      // pars->initialize_clustering_with_kmeans(data);
+      pars->initialize_clustering_with_user_inputs(data);
     }
     // Stochastic approximation step
 #pragma omp parallel for
