@@ -22,7 +22,7 @@ for(j in seq(along=ns))
   for(i in 1:nsim){
     dat0 <- sim_warping_mixture(ns[j], rep(1, 1),
                                 rbind(kappa1),
-                                ni = 11,
+                                ni = 1,
                                 tau = 2,
                                 mu_sh = -25, mu_sc = 500,
                                 sd_sh = 10, sd_sc=50, sd_err = 10)

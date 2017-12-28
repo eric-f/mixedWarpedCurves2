@@ -2,7 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{dirichlet_mle}
 \alias{dirichlet_mle}
-\title{Internal function for fitting the model by SAEM}
+\title{Internal function for MLE of dirichlet distribution by newton-raphson}
 \usage{
 dirichlet_mle(w_list)
 }
@@ -10,5 +10,5 @@ dirichlet_mle(w_list)
 \item{w_list}{R List - list of compositional data points}
 }
 \description{
-Internal function for fitting the model by SAEM
+Internal function for MLE of dirichlet distribution by newton-raphson
 }

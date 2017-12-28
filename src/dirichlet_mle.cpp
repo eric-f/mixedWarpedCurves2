@@ -8,7 +8,7 @@
 // [[Rcpp::depends(BH)]]
 #include <boost/math/special_functions.hpp>
 
-//' Internal function for fitting the model by SAEM
+//' Internal function for MLE of dirichlet distribution by newton-raphson
 //'
 //' @param w_list R List - list of compositional data points
 //' @export

@@ -21,6 +21,7 @@ mixture_of_dirichlet <- function(w, nclust, init_clust=NULL, maxit=20, nstart=1)
           out <- candidate
       }
       else{
+        ## First fit
         out <- candidate
       }
     }

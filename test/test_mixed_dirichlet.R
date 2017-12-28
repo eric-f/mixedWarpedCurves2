@@ -22,7 +22,7 @@ dat0 <- sim_warping_mixture(200, rep(1/3, 3),
                             rbind(kappa1,
                                   kappa2,
                                   kappa3),
-                            ni = 11,
+                            ni = 1,
                             tau = 40,
                             mu_sh = -25, mu_sc = 500,
                             sd_sh = 10, sd_sc=50, sd_err = 10)
@@ -36,7 +36,7 @@ set.seed(0)
 
 
 ## random start
-out <- mixture_of_dirichlet(dw, 3, maxit = 100, nstart=1000)
+out <- mixture_of_dirichlet(dw, 3, maxit = 200, nstart=1000)
 out$llk
 table(true_clust, apply(out$post_p, 1, which.max))
 
@@ -49,8 +49,12 @@ table(true_clust, apply(out$post_p, 1, which.max))
 kmean_clust <- kmeans(t(dw), 3, nstart = 20)$cluster
 out <- mixture_of_dirichlet(dw, 3, kmean_clust)
 out$llk
-table(true_clust, apply(out$post_p, 1, which.max))
+pred_clust <- apply(out$post_p, 1, which.max)
+table(true_clust, pred_clust)
+table(true_clust, kmean_clust)
 
+purity(as.factor(true_clust), as.factor(pred_clust))
+entropy(as.factor(true_clust), as.factor(pred_clust))
 
 # dim_n <- ncol(dw)
 # dim_w <- nrow(dw)
