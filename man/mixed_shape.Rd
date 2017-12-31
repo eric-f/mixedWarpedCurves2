@@ -4,7 +4,7 @@
 \alias{mixed_shape}
 \title{Fit the mixture model of Brillinger and Stewart (1997)}
 \usage{
-mixed_shape(y, x = NULL, nCat = 9, nIter = 30, nTry = 10)
+mixed_shape(y, x = NULL, nCat = 9, nIter = 100, nTry = 10)
 }
 \arguments{
 \item{y}{matrix, numeric matrix containing depth. Each column represents one dive.}
