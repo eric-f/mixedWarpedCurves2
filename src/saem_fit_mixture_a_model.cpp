@@ -12,6 +12,7 @@
 #include "class_mixture_a_model.h"
 
 //' Internal function for fitting the model by SAEM
+//' (obsolete and experimental, probably an incorrect implementation)
 //'
 //' @param curve_list List of curve objects, each should have a component called data, with subcomponents, x and y,
 //'        for the time and value of the functional data

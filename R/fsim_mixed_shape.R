@@ -1,9 +1,9 @@
-#' Fitting shape-invariant model with flexible time transformations
+#' Fitting mixture of shapes model with amplitude shifting and scaling by SAEM
 #'
-#' This function fits the model \deqn{Y_i(t) = a_{i,sh} + a_{i,sc} f \circ h_i(y)}
+#' This function fits the model \deqn{Y_i(t) = a_{i,sh} + a_{i,sc} f_{m_i}(t)}
 #' by maximum likelihood via a stochastic approximation EM algorithm. In the model,
-#' $f$ is a B-spline representing a common shape whereas \eqn{h_i:[0, 1] \to [0, 1]}
-#' is a monotone B-spline representing a random time transformation
+#' $f_m$ is a B-spline representing a common shape for cluster $m$. This model assume
+#' no warpings.
 #' @param y a vector of observed curves
 #' @param obs_time a vector of the observation times
 #' @param curve_id a vector of curve IDs
