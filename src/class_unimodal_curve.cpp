@@ -225,6 +225,7 @@ void Unimodal_Curve::mh_accept_reject(){
     current_dw = proposed_dw;
     current_w = proposed_w;
     current_warped_x = proposed_warped_x;
+    current_warped_f = proposed_warped_f;
     ++(common_pars->mh_accept_rate_table(curve_id, common_pars->mh_accept_rate_table_counter));
     return;
   }
@@ -244,6 +245,9 @@ void Unimodal_Curve::draw_new_a(){
   tmp_mu_post = tmp_sigma_post * (tmp_f_mat.t() * y / common_pars->sigma2 +
     common_pars->sigma2_a_inv * common_pars->mu_a);
   current_a = tmp_mu_post + arma::chol(tmp_sigma_post).t() * arma::randn(dim_a);
+  // Needs to update current_fitted_y and current_residual_sum_of_squares after drawing new a;
+  current_fitted_y = current_a(0) + current_a(1) * current_warped_f;
+  current_residual_sum_of_squares = arma::sum(arma::square(y - current_fitted_y));
   return;
 }
 
@@ -311,21 +315,21 @@ void Unimodal_Curve::update_sufficient_statistics_approximates(){
 
   // Update stochastic approximates
   sapprox_residual_sum_of_squares = (1 - current_step_size) * sapprox_residual_sum_of_squares +
-    current_step_size * current_residual_sum_of_squares;
+    current_step_size * current_residual_sum_of_squares; // updated in draw_new_a;
   sapprox_a = (1 - current_step_size) * sapprox_a +
-    current_step_size * current_a;
+    current_step_size * current_a;                       // updated in draw_new_a;
   sapprox_sq_a = (1 - current_step_size) * sapprox_sq_a +
-    current_step_size * arma::square(current_a);
+    current_step_size * arma::square(current_a);         // updated in draw_new_a;
   sapprox_cluster_membership = (1 - current_step_size) * sapprox_cluster_membership +
-    current_step_size * current_cluster_membership;
+    current_step_size * current_cluster_membership;      // update in draw_new_m
   sapprox_w = (1 - current_step_size) * sapprox_w +
-    current_step_size * current_w;
+    current_step_size * current_w;                       // updated in mh_accept_reject;
   sapprox_log_dw = (1 - current_step_size) * sapprox_log_dw +
-    current_step_size * current_log_dw;
+    current_step_size * current_log_dw;                  // updated above
   sapprox_warped_f = (1 - current_step_size) * sapprox_warped_f +
-    current_step_size * current_warped_f;
+    current_step_size * current_warped_f;                // updated in mh_accept_reject;
   sapprox_fitted_y = (1 - current_step_size) * sapprox_fitted_y +
-    current_step_size * current_fitted_y;
+    current_step_size * current_fitted_y;                // updated in draw_new_a;
   return;
 }
 
