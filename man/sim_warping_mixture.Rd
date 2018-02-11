@@ -10,3 +10,38 @@ sim_warping_mixture(n, p, kappa, tau = 1, ni = 1001, mu_sh = -15,
 \description{
 Simulate warping mixture
 }
+\examples{
+require(gtools)
+require(ggplot2)
+kappa0 <- c(1,2,2,1)
+kappa0 <- kappa0 / sum(kappa0)
+kappa1 <- c(0,4,4,0)
+kappa1 <- kappa1 / sum(kappa1)
+kappa2 <- c(4,1,1,4)
+kappa2 <- kappa2 / sum(kappa2)
+kappa3 <- c(0,0,1,1)
+kappa3 <- kappa3 / sum(kappa3)
+kappa4 <- c(1,1,0,0)
+kappa4 <- kappa4 / sum(kappa4)
+
+x0 <- seq(0, 1, length=1001)
+h0_basis <- create.bspline.basis(c(0, 1), 5)
+h0_basis_mat <- eval.basis(h0_basis, x0)
+h1 <- h0_basis_mat \%*\% cumsum(c(0, kappa0))
+plot(h1~x0, type="l")
+
+dat0 <- sim_warping_mixture(100, rep(1/3, 3),
+                    rbind(kappa1,
+                          kappa2,
+                          kappa3),
+                    ni = 201,
+                    tau = 30,
+                    mu_sh = -25, mu_sc = 500,
+                    sd_sh = 10, sd_sc=50, sd_err = 5)
+
+ggplot(dat0) +
+  geom_line(aes(x=x, y=y, group=id, col=clust))
+ggplot(dat0) +
+  geom_line(aes(x=x, y=warped_x, group=id, col=clust))
+
+}

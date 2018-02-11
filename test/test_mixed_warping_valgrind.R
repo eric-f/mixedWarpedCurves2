@@ -25,9 +25,9 @@ dat0 <- sim_warping_mixture(200, rep(1/3, 3),
                             sd_sh = 10, sd_sc=50, sd_err = 10)
 
 
-
+lineprof({
 system.time(my_fit <-
-              mixedWarpedCurves2::fsim_mixture(
+              mixedWarpedCurves2::fsim_unimodal(
                 y = dat0$y,
                 obs_time = dat0$x,
                 curve_id = dat0$id,
@@ -43,4 +43,5 @@ system.time(my_fit <-
                                             accept_rate_lb = 0.17,
                                             accept_rate_ub = 0.33,
                                             h_n_knots = 1+7),
-                trace = TRUE))
+                trace = FALSE))
+})

@@ -87,11 +87,12 @@ Unimodal_Model::Unimodal_Model(Rcpp::List pars_list,
 
   // Temporary variables for Dirichlet maximization
   tmp_sum_log_dw = arma::zeros(dim_kappa, n_cluster);
-  minka_q = arma::zeros(dim_kappa);
-  minka_g = arma::zeros(dim_kappa);
-  minka_z = 0.0;
-  minka_b = 0.0;
-  minka_update_step = arma::zeros(dim_kappa);
+  newton_q = arma::zeros(dim_kappa);
+  newton_g = arma::zeros(dim_kappa);
+  newton_z = 0.0;
+  newton_b = 0.0;
+  newton_update_step = arma::zeros(dim_kappa);
+  tmp_new_kappa = arma::zeros(dim_kappa);
 
   // Trackers
   sigma2_track = arma::zeros(n_iterations);
@@ -108,7 +109,6 @@ Unimodal_Model::Unimodal_Model(Rcpp::List pars_list,
   current_H = arma::zeros(num_pars, num_pars);
   current_G = arma::zeros(num_pars);
 }
-
 
 
 // Generate the cholesky decomposition of the I - 1 / (dim_kappa) J matrix with a dimension of (dim_kappa) x (dim_kappa)
@@ -129,7 +129,6 @@ void Unimodal_Model::generate_chol_centering_mat(){
   }
   return;
 }
-
 
 
 // Keep track of the acceptance rate of the metropolis-hastings sampler and
@@ -166,12 +165,9 @@ void Unimodal_Model::track_mh_acceptance_and_calibrate_proposal(){
 }
 
 
-
-
-// Gather stochastic approximates of the sufficient statistics and perform an M-step
-// Depends on: mydata, n_curve, n_total, kappa
-// Changes: sigma2_a, sigma2_a_mat, sigma2_a_inv, sigma2
-
+// Gather stochastic approximates of the sufficient statistics and perform an M-step - sigma2
+// Depends on:
+// Changes:
 void Unimodal_Model::update_estimates_data_mod(std::vector<Unimodal_Curve>* mydata){
   // Reset estimates
   sigma2 = 0.0;
@@ -182,6 +178,10 @@ void Unimodal_Model::update_estimates_data_mod(std::vector<Unimodal_Curve>* myda
 
 }
 
+
+// Gather stochastic approximates of the sufficient statistics and perform an M-step - sigma2_a
+// Depends on:
+// Changes:
 void Unimodal_Model::update_estimates_amp_mod(std::vector<Unimodal_Curve>* mydata){
   // Reset estimates
   mu_a.zeros();
@@ -199,6 +199,7 @@ void Unimodal_Model::update_estimates_amp_mod(std::vector<Unimodal_Curve>* mydat
   sigma2_a_inv = arma::inv(sigma2_a_mat);
 }
 
+
 void Unimodal_Model::update_estimates_single_warp_mod(std::vector<Unimodal_Curve>* mydata){
   // Reset estimates
   cluster_sizes.zeros();
@@ -214,22 +215,47 @@ void Unimodal_Model::update_estimates_single_warp_mod(std::vector<Unimodal_Curve
 
   // Update kappa_clusters (by Newton-Raphson)
   // ... for when all curves are in group 0 ...
-  newton_max_iter = 1000;
+  newton_max_iter = 100;
+  newton_max_inner_iter = 100;
   newton_abs_tol = 1.0e-8;
 
   cluster_idx = 0;
 
   for(newton_idx = 0; newton_idx < newton_max_iter; ++newton_idx) {
-    minka_z = cluster_sizes(cluster_idx) * boost::math::trigamma(arma::sum(kappa_clusters.col(cluster_idx)));
-    minka_g = tmp_sum_log_dw.col(cluster_idx) + cluster_sizes(cluster_idx) * boost::math::digamma(arma::sum(kappa_clusters.col(cluster_idx)));
+    // compute hessian and gradient
+    newton_z = cluster_sizes(cluster_idx) * boost::math::trigamma(arma::sum(kappa_clusters.col(cluster_idx)));
+    newton_g = tmp_sum_log_dw.col(cluster_idx) + cluster_sizes(cluster_idx) * boost::math::digamma(arma::sum(kappa_clusters.col(cluster_idx)));
     for(generic_idx = 0; generic_idx < dim_kappa; ++generic_idx) {
-      minka_q(generic_idx) = -cluster_sizes(cluster_idx) * boost::math::trigamma(kappa_clusters(generic_idx, cluster_idx));
-      minka_g(generic_idx) -= cluster_sizes(cluster_idx) * boost::math::digamma(kappa_clusters(generic_idx, cluster_idx));
+      newton_q(generic_idx) = -cluster_sizes(cluster_idx) * boost::math::trigamma(kappa_clusters(generic_idx, cluster_idx));
+      newton_g(generic_idx) -= cluster_sizes(cluster_idx) * boost::math::digamma(kappa_clusters(generic_idx, cluster_idx));
     }
-    minka_b = arma::sum(minka_g / minka_q) / (1/minka_z + arma::sum(1 / minka_q));
-    minka_update_step = (minka_g - arma::ones(dim_kappa) * minka_b) / minka_q;
-    kappa_clusters.col(cluster_idx) -= minka_update_step;
-    if(arma::max(arma::abs(minka_update_step)) < newton_abs_tol) {
+    newton_b = arma::sum(newton_g / newton_q) / (1/newton_z + arma::sum(1 / newton_q));
+
+    // step size
+    newton_update_step = (newton_g - arma::ones(dim_kappa) * newton_b) / newton_q;
+
+    // step halving if out-of-bound
+    for(newton_inner_idx = 0; newton_inner_idx < newton_max_inner_iter; ++newton_inner_idx){
+      tmp_new_kappa = kappa_clusters.col(cluster_idx) - newton_update_step;
+      if(arma::all(tmp_new_kappa > 0)){
+        break;
+      }
+      else{
+        newton_update_step /= 2;
+      }
+    }
+
+    // Check validity and update
+    if(arma::all(tmp_new_kappa > 0)){
+      kappa_clusters.col(cluster_idx) = tmp_new_kappa;
+    }
+    else{
+      Rcpp::Rcout << "Maximum step-halving reached. Some estimated kappa still negative." << std::endl;
+      throw;
+    }
+
+    // Check convergence
+    if(arma::max(arma::abs(newton_update_step)) < newton_abs_tol) {
       break;
     }
   }
@@ -241,6 +267,7 @@ void Unimodal_Model::update_estimates_single_warp_mod(std::vector<Unimodal_Curve
     ++cluster_idx;
   }
 }
+
 
 void Unimodal_Model::initialize_clustering_with_user_inputs(std::vector<Unimodal_Curve>* mydata){
   Rcpp::Rcout << "Initialize clustering with user inputs..." << std::endl;
@@ -264,6 +291,7 @@ void Unimodal_Model::initialize_clustering_with_user_inputs(std::vector<Unimodal
 
   return;
 }
+
 
 void Unimodal_Model::initialize_clustering_with_kmeans(std::vector<Unimodal_Curve>* mydata){
 
@@ -345,7 +373,6 @@ void Unimodal_Model::initialize_clustering_with_kmeans(std::vector<Unimodal_Curv
 }
 
 
-
 void Unimodal_Model::update_estimates_mixture_warp_mod(std::vector<Unimodal_Curve>* mydata){
   // Reset estimates
   cluster_sizes.zeros();
@@ -363,22 +390,47 @@ void Unimodal_Model::update_estimates_mixture_warp_mod(std::vector<Unimodal_Curv
   p_clusters = cluster_sizes / n_curve;
 
   // Update kappa_clusters (by Newton-Raphson)
-  newton_max_iter = 1000;
+  newton_max_iter = 100;
+  newton_max_inner_iter = 100;
   newton_abs_tol = 1.0e-8;
 
   for(cluster_idx = 0; cluster_idx < n_cluster; ++cluster_idx) {
     if(cluster_sizes(cluster_idx) > 0){
       for(newton_idx = 0; newton_idx < newton_max_iter; ++newton_idx) {
-        minka_z = cluster_sizes(cluster_idx) * boost::math::trigamma(arma::sum(kappa_clusters.col(cluster_idx)));
-        minka_g = tmp_sum_log_dw.col(cluster_idx) + cluster_sizes(cluster_idx) * boost::math::digamma(arma::sum(kappa_clusters.col(cluster_idx)));
+        // compute hessian and gradient
+        newton_z = cluster_sizes(cluster_idx) * boost::math::trigamma(arma::sum(kappa_clusters.col(cluster_idx)));
+        newton_g = tmp_sum_log_dw.col(cluster_idx) + cluster_sizes(cluster_idx) * boost::math::digamma(arma::sum(kappa_clusters.col(cluster_idx)));
         for(generic_idx = 0; generic_idx < dim_kappa; ++generic_idx) {
-          minka_q(generic_idx) = -cluster_sizes(cluster_idx) * boost::math::trigamma(kappa_clusters(generic_idx, cluster_idx));
-          minka_g(generic_idx) -= cluster_sizes(cluster_idx) * boost::math::digamma(kappa_clusters(generic_idx, cluster_idx));
+          newton_q(generic_idx) = -cluster_sizes(cluster_idx) * boost::math::trigamma(kappa_clusters(generic_idx, cluster_idx));
+          newton_g(generic_idx) -= cluster_sizes(cluster_idx) * boost::math::digamma(kappa_clusters(generic_idx, cluster_idx));
         }
-        minka_b = arma::sum(minka_g / minka_q) / (1/minka_z + arma::sum(1 / minka_q));
-        minka_update_step = (minka_g - arma::ones(dim_kappa) * minka_b) / minka_q;
-        kappa_clusters.col(cluster_idx) -= minka_update_step;
-        if(arma::max(arma::abs(minka_update_step)) < newton_abs_tol) {
+        newton_b = arma::sum(newton_g / newton_q) / (1/newton_z + arma::sum(1 / newton_q));
+
+        // step size
+        newton_update_step = (newton_g - arma::ones(dim_kappa) * newton_b) / newton_q;
+
+        // step halving if out-of-bound
+        for(newton_inner_idx = 0; newton_inner_idx < newton_max_inner_iter; ++newton_inner_idx){
+          tmp_new_kappa = kappa_clusters.col(cluster_idx) - newton_update_step;
+          if(arma::all(tmp_new_kappa > 0)){
+            break;
+          }
+          else{
+            newton_update_step /= 2;
+          }
+        }
+
+        // Check validity and update
+        if(arma::all(tmp_new_kappa > 0)){
+          kappa_clusters.col(cluster_idx) = tmp_new_kappa;
+        }
+        else{
+          Rcpp::Rcout << "Maximum step-halving reached. Some estimated kappa still negative." << std::endl;
+          throw;
+        }
+
+        // Check convergence
+        if(arma::max(arma::abs(newton_update_step)) < newton_abs_tol) {
           break;
         }
       }
@@ -392,15 +444,12 @@ void Unimodal_Model::update_estimates_mixture_warp_mod(std::vector<Unimodal_Curv
 }
 
 
-
-
 // Update the stoastic approximation of the fisher information
 // Depends on:
 // Changes:
 void Unimodal_Model::update_fisher_information_approx(std::vector<Unimodal_Curve>* mydata){
   return;
 }
-
 
 
 // Increase saem iteration counter
@@ -410,7 +459,6 @@ void Unimodal_Model::advance_iteration_counter(){
   ++saem_counter;
   return;
 }
-
 
 
 // Store current estiamtes for tracking
@@ -424,7 +472,6 @@ void Unimodal_Model::track_estimates(){
   sampled_m_track.col(saem_counter) = current_m_vec;
   kappa_clusters_track.slice(saem_counter) = kappa_clusters;
 }
-
 
 
 // Print estimates for monitoring
@@ -451,8 +498,6 @@ void Unimodal_Model::print_estimates(int interval){
 }
 
 
-
-
 // Return estimated parameters as R list
 Rcpp::List Unimodal_Model::return_pars(double y_scaling_factor){
   return Rcpp::List::create(
@@ -463,7 +508,6 @@ Rcpp::List Unimodal_Model::return_pars(double y_scaling_factor){
     Rcpp::Named("kappa_clusters", Rcpp::wrap(kappa_clusters))
   );
 };
-
 
 
 // Return auxiliary information as R list
@@ -492,8 +536,6 @@ Rcpp::List Unimodal_Model::return_aux(){
 };
 
 
-
-
 // Return sequence of estimated parameters as R list
 Rcpp::List Unimodal_Model::return_pars_tracker(double y_scaling_factor){
   return Rcpp::List::create(
@@ -504,7 +546,6 @@ Rcpp::List Unimodal_Model::return_pars_tracker(double y_scaling_factor){
     Rcpp::Named("kappa_clusters_track", Rcpp::wrap(kappa_clusters_track))
   );
 };
-
 
 
 // Return sequence of estimated parameters as R list

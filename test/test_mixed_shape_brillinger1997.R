@@ -61,10 +61,13 @@ clust_lbl <- dat0 %>%
   summarise(clust=first(clust))
 
 system.time(my_fit <- mixedWarpedCurves2::mixed_shape(y = y, x = x, nCat=3))
-plot(my_fit$mlik_track)
+plot(my_fit$aux_track)
+plot(my_fit$aux_ntry)
+my_fit$aux
+max(my_fit$aux_ntry)
 
 clust_lbl$pred_clust_lbl <- apply(my_fit$p_jk, 1, which.max)
 table(clust_lbl$clust, clust_lbl$pred_clust_lbl)
-matplot(y, type="l", col=pred_clust_lbl)
-matlines(my_fit$a_k, type="l", col="gold", lwd=2)
+matplot(y, type="l", col=clust_lbl$pred_clust_lbl)
+matlines(my_fit$a_k*my_fit$y_max, type="l", col="gold", lwd=2)
 

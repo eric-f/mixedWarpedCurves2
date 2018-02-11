@@ -65,20 +65,23 @@ public:
   // Temporary variables
   arma::ivec current_m_vec;
   double tmp_accept_rate;
-  arma::vec minka_q;
-  arma::vec minka_g;
-  double minka_z;
-  double minka_b;
-  arma::vec minka_update_step;
+  arma::vec newton_q;
+  arma::vec newton_g;
+  double newton_z;
+  double newton_b;
+  arma::vec newton_update_step;
   int cluster_idx;
   int generic_idx;
   int newton_idx;
+  int newton_inner_idx;
   arma::mat tmp_sum_log_dw;
 
   // Kmeans & Newton-Raphson control parameters
   double tmp_min_km_ss;
   double tmp_new_km_ss;
   int newton_max_iter;
+  int newton_max_inner_iter;
+  arma::vec tmp_new_kappa;
   double newton_abs_tol;
 
   // Tracker
