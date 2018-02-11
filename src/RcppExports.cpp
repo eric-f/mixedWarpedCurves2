@@ -62,6 +62,36 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// saem_fit_mixed_warped_curves
+Rcpp::List saem_fit_mixed_warped_curves(Rcpp::List curve_list, Rcpp::List pars_list, Rcpp::List control_list, double y_scaling_factor, bool trace);
+RcppExport SEXP _mixedWarpedCurves2_saem_fit_mixed_warped_curves(SEXP curve_listSEXP, SEXP pars_listSEXP, SEXP control_listSEXP, SEXP y_scaling_factorSEXP, SEXP traceSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type curve_list(curve_listSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type pars_list(pars_listSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_list(control_listSEXP);
+    Rcpp::traits::input_parameter< double >::type y_scaling_factor(y_scaling_factorSEXP);
+    Rcpp::traits::input_parameter< bool >::type trace(traceSEXP);
+    rcpp_result_gen = Rcpp::wrap(saem_fit_mixed_warped_curves(curve_list, pars_list, control_list, y_scaling_factor, trace));
+    return rcpp_result_gen;
+END_RCPP
+}
+// saem_fit_mixed_warping
+Rcpp::List saem_fit_mixed_warping(Rcpp::List curve_list, Rcpp::List pars_list, Rcpp::List control_list, double y_scaling_factor, bool trace);
+RcppExport SEXP _mixedWarpedCurves2_saem_fit_mixed_warping(SEXP curve_listSEXP, SEXP pars_listSEXP, SEXP control_listSEXP, SEXP y_scaling_factorSEXP, SEXP traceSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type curve_list(curve_listSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type pars_list(pars_listSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type control_list(control_listSEXP);
+    Rcpp::traits::input_parameter< double >::type y_scaling_factor(y_scaling_factorSEXP);
+    Rcpp::traits::input_parameter< bool >::type trace(traceSEXP);
+    rcpp_result_gen = Rcpp::wrap(saem_fit_mixed_warping(curve_list, pars_list, control_list, y_scaling_factor, trace));
+    return rcpp_result_gen;
+END_RCPP
+}
 // saem_fit_mixture_a_model
 Rcpp::List saem_fit_mixture_a_model(Rcpp::List curve_list, Rcpp::List pars_list, Rcpp::List control_list, double y_scaling_factor, bool trace);
 RcppExport SEXP _mixedWarpedCurves2_saem_fit_mixture_a_model(SEXP curve_listSEXP, SEXP pars_listSEXP, SEXP control_listSEXP, SEXP y_scaling_factorSEXP, SEXP traceSEXP) {
@@ -98,6 +128,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_mixedWarpedCurves2_em_mixture_of_dirichlet", (DL_FUNC) &_mixedWarpedCurves2_em_mixture_of_dirichlet, 4},
     {"_mixedWarpedCurves2_saem_fit", (DL_FUNC) &_mixedWarpedCurves2_saem_fit, 5},
     {"_mixedWarpedCurves2_saem_fit_mixed_shape", (DL_FUNC) &_mixedWarpedCurves2_saem_fit_mixed_shape, 5},
+    {"_mixedWarpedCurves2_saem_fit_mixed_warped_curves", (DL_FUNC) &_mixedWarpedCurves2_saem_fit_mixed_warped_curves, 5},
+    {"_mixedWarpedCurves2_saem_fit_mixed_warping", (DL_FUNC) &_mixedWarpedCurves2_saem_fit_mixed_warping, 5},
     {"_mixedWarpedCurves2_saem_fit_mixture_a_model", (DL_FUNC) &_mixedWarpedCurves2_saem_fit_mixture_a_model, 5},
     {"_mixedWarpedCurves2_saem_fit_unimodal", (DL_FUNC) &_mixedWarpedCurves2_saem_fit_unimodal, 5},
     {NULL, NULL, 0}
