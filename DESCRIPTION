@@ -1,7 +1,7 @@
 Package: mixedWarpedCurves2
 Type: Package
 Title: Mixture model for clustering of warped curves
-Version: 1.3.0
+Version: 2.0.0
 Author: Eric Fu <ericfu@stat.ubc.ca>
 Maintainer: Eric Fu <ericfu@stat.ubc.ca>
 Description: Simultaneous clustering and curve registration by a mixutre of
@@ -16,7 +16,8 @@ Imports:
     RcppArmadillo (>= 0.7.400.2.0),
     RcppGSL (>= 0.3.1),
     BH (>= 1.62.0),
-    RcppProgress (>= 0.2.1)
+    RcppProgress (>= 0.2.1),
+    gtools
 Depends:
     splines
 LinkingTo:

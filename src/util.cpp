@@ -95,6 +95,7 @@ double compute_llk_dw(arma::vec dw, arma::vec tau_kappa) {
 
 // Function to compute minus log likelihood and derivatives
 // for Dirichlet distribution with fixed mean (new version, for mixture)
+// Parameter: 
 double newton_step_dirichlet_fixed_mean (double log_tau,
                                          arma::vec kappa,
                                          arma::vec mean_log_dw) {
@@ -127,8 +128,11 @@ double newton_step_dirichlet_fixed_mean (double log_tau,
   return(gradient / hessian);
 }
 
+
 // Function to compute minus log likelihood and derivatives
 // for Dirichlet distribution with fixed mean (new version, for mixture)
+// [OBSOLETE] check alternative implementation with step-halving 
+//            and no log-transformation
 arma::vec newton_step_dirichlet_free_mean (arma::vec log_tau_kappa,
                                            arma::vec mean_log_dw) {
   arma::vec gradient;
