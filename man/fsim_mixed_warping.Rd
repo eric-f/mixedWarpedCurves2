@@ -2,7 +2,9 @@
 % Please edit documentation in R/fsim_mixed_warping.R
 \name{fsim_mixed_warping}
 \alias{fsim_mixed_warping}
-\title{Fitting shape-invariant model with flexible time transformations}
+\title{Fitting shape-invariant model with flexible time transformations that follows
+a finite mixture of dirichlet distribution
+(obsolete implementation, see fsim_mixed_warped_curves)}
 \usage{
 fsim_mixed_warping(y, obs_time, curve_id, init_clust = NULL, n_clust = 1,
   saem_control = control_saem(), trace = FALSE)

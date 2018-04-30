@@ -2,10 +2,16 @@
 require(fda)
 require(gtools)
 
-#' Fixed base shape based on beta-density
+#' Fixed base shape based on symmetric beta-density
 #'
 base_shape <- function(x, a=2){
   -dbeta(x, a, a) / dbeta(0.5, a, a)
+}
+
+#' Fixed base shape based on beta-density
+#'
+beta_shape <- function(x, a=2, b=3){
+  -dbeta(x, a, b) / dbeta((a-1)/(a+b-2), a, b)
 }
 
 
@@ -45,9 +51,11 @@ base_shape <- function(x, a=2){
 #'   geom_line(aes(x=x, y=warped_x, group=id, col=clust))
 #'
 #' @export
-sim_warping_mixture <- function(n, p, kappa, tau=1, ni=1001,
+sim_warping_mixture <- function(n, p, kappa,
+                                tau=1, ni=1001,
                                 mu_sh = -15, mu_sc = 500,
-                                sd_sh = 5, sd_sc=50, sd_err = 5){
+                                sd_sh = 5, sd_sc=50, sd_err = 5,
+                                shape_a=2, shape_b=2){
   x0 <- seq(0, 1, length=ni)
   n_clust <- length(p)
   clust_lbl <- sample(n_clust, n, prob = p, replace = TRUE)
@@ -57,15 +65,13 @@ sim_warping_mixture <- function(n, p, kappa, tau=1, ni=1001,
   w <- apply(w0, 1, function(k){rdirichlet(1, k)})
   w <- apply(rbind(0, w), 2, cumsum)
 
-  # h_basis <- create.bspline.basis(c(0, 1), n_basis)
-  # h_basis_mat <- eval.basis(h_basis, x0)
   h_basis_mat <- splines::bs(x = x0,
                              degree = 3,
                              df = n_basis,
                              Boundary.knots = c(0, 1),
                              intercept = TRUE)
   ht <- h_basis_mat %*% w
-  y0 <- base_shape(ht)
+  y0 <- beta_shape(ht, shape_a, shape_b)
 
   err <- matrix(rnorm(n*ni, 0, sd_err), ni, n)
 

@@ -20,6 +20,10 @@ em_mixture_of_dirichlet <- function(data, init_clust, dim_m, maxit) {
     .Call('_mixedWarpedCurves2_em_mixture_of_dirichlet', PACKAGE = 'mixedWarpedCurves2', data, init_clust, dim_m, maxit)
 }
 
+logLik_unimodal <- function(pars_list, curve_list, aux_list, mc_mode, n_mc, seed) {
+    .Call('_mixedWarpedCurves2_logLik_unimodal', PACKAGE = 'mixedWarpedCurves2', pars_list, curve_list, aux_list, mc_mode, n_mc, seed)
+}
+
 #' Internal function for fitting the model by SAEM
 #'
 #' @param curve_list List of curve objects, each should have a component called data, with subcomponents, x and y,
@@ -54,6 +58,7 @@ saem_fit_mixed_warped_curves <- function(curve_list, pars_list, control_list, y_
 }
 
 #' Internal function for fitting the model by SAEM
+#' (obsolete/incorrect implementation)
 #'
 #' @param curve_list List of curve objects, each should have a component called data, with subcomponents, x and y,
 #'        for the time and value of the functional data
@@ -65,6 +70,7 @@ saem_fit_mixed_warping <- function(curve_list, pars_list, control_list, y_scalin
 }
 
 #' Internal function for fitting the model by SAEM
+#' (obsolete and experimental, probably an incorrect implementation)
 #'
 #' @param curve_list List of curve objects, each should have a component called data, with subcomponents, x and y,
 #'        for the time and value of the functional data

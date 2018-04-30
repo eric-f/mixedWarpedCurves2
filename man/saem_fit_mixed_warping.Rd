@@ -2,7 +2,8 @@
 % Please edit documentation in R/RcppExports.R
 \name{saem_fit_mixed_warping}
 \alias{saem_fit_mixed_warping}
-\title{Internal function for fitting the model by SAEM}
+\title{Internal function for fitting the model by SAEM
+(obsolete/incorrect implementation)}
 \usage{
 saem_fit_mixed_warping(curve_list, pars_list, control_list, y_scaling_factor,
   trace)
@@ -19,4 +20,5 @@ for the time and value of the functional data}
 }
 \description{
 Internal function for fitting the model by SAEM
+(obsolete/incorrect implementation)
 }

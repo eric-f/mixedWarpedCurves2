@@ -2,7 +2,8 @@
 % Please edit documentation in R/fsim_mixed_warped_curves.R
 \name{fsim_mixed_warped_curves}
 \alias{fsim_mixed_warped_curves}
-\title{Fitting shape-invariant model with flexible time transformations}
+\title{Fitting shape-invariant model with flexible time transformations that follows
+a finite mixture of dirichlet distribution}
 \usage{
 fsim_mixed_warped_curves(y, obs_time, curve_id, init_clust = NULL,
   n_clust = 1, saem_control = control_saem(), trace = FALSE)
@@ -20,5 +21,7 @@ fsim_mixed_warped_curves(y, obs_time, curve_id, init_clust = NULL,
 This function fits the model \deqn{Y_i(t) = a_{i,sh} + a_{i,sc} f \circ h_i(y)}
 by maximum likelihood via a stochastic approximation EM algorithm. In the model,
 $f$ is a B-spline representing a common shape whereas \eqn{h_i:[0, 1] \to [0, 1]}
-is a monotone B-spline representing a random time transformation
+is a monotone B-spline representing a random time transformation. The warping effects
+follows a finite mixture of dirichlet distributions. The SA is performed on
+the full-conditional expectations, $E(S(a, w, m)|y)$ instead of $E(S(a, w, m)|y, m)$
 }

@@ -2,7 +2,8 @@
 % Please edit documentation in R/fsim_mixture_a_model.R
 \name{fsim_mixture_a_model}
 \alias{fsim_mixture_a_model}
-\title{Fitting shape-invariant model with flexible time transformations}
+\title{Fitting shape-invariant model with mixture of shape and amplitude shifting and scaling
+(Obsolete and probably buggy)}
 \usage{
 fsim_mixture_a_model(y, obs_time, curve_id, init_clust = NULL, n_clust = 1,
   saem_control = control_saem(), trace = FALSE)
@@ -17,8 +18,7 @@ fsim_mixture_a_model(y, obs_time, curve_id, init_clust = NULL, n_clust = 1,
 \item{saem_control}{a list of values to control the MCMC and stochastic approximation}
 }
 \description{
-This function fits the model \deqn{Y_i(t) = a_{i,sh} + a_{i,sc} f \circ h_i(y)}
+This function fits the model \deqn{Y_i(t) = a_{i,sh} + a_{i,sc} f_m(t)}
 by maximum likelihood via a stochastic approximation EM algorithm. In the model,
-$f$ is a B-spline representing a common shape whereas \eqn{h_i:[0, 1] \to [0, 1]}
-is a monotone B-spline representing a random time transformation
+$f_m$ is a B-spline representing a common shape for cluster $m$.
 }
