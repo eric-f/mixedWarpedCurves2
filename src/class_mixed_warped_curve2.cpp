@@ -72,7 +72,7 @@ Mixed_Warped_Curve::Mixed_Warped_Curve(Rcpp::List data, Mixed_Warped_Model* pars
   sapprox_cluster_membership = arma::zeros(n_cluster);          // n_cluster x 1
   sapprox_aug_warped_f_basis_mat = arma::zeros(n_i, dim_f + 1); // n_i x (dim_f + 1)          [Psi]
   sapprox_hat_mat = arma::zeros(dim_f + 1, dim_f + 1);          // (dim_f + 1) x (dim_f + 1)  [C_mat]
-  sapprox_cov_a = arma::zeros(dim_a, dim_a);                    // dim_a x dim_a              [Sigma_a]  
+  sapprox_cov_a = arma::zeros(dim_a, dim_a);                    // dim_a x dim_a              [Sigma_a]
 
   // Private members
 
@@ -83,7 +83,7 @@ Mixed_Warped_Curve::Mixed_Warped_Curve(Rcpp::List data, Mixed_Warped_Model* pars
   // Temporary or working variables
   // ... for initialize_h_basis_mat()
   tmp_b_vec = gsl_vector_alloc(dim_f);   // Allocate a cubic bspline workspace
-  tmp_bw = gsl_bspline_alloc(common_pars->f_order, common_pars->f_break_points.size()); 
+  tmp_bw = gsl_bspline_alloc(common_pars->f_order, common_pars->f_break_points.size());
   gsl_bspline_knots(common_pars->f_break_points, tmp_bw);   // Computes the knots associated with
                                                             // thegiven breakpoints and stores
                                                             // them internally in tmp_bw->knots.
@@ -380,7 +380,7 @@ void Mixed_Warped_Curve::update_sufficient_statistics_approximates(){
   current_step_size = common_pars->saem_step_sizes(common_pars->saem_counter);
 
   // Compute sufficient statistics based on current MCMC state
-  current_aug_warped_f_basis_mat.col(0) = current_a(0) * arma::ones(n_i);
+  current_aug_warped_f_basis_mat.col(0) = -current_a(0) * arma::ones(n_i);
   current_aug_warped_f_basis_mat.cols(1, dim_f) = current_a(1) * current_warped_f_basis_mat;
 
   tmp_half_hat_mat = current_aug_warped_f_basis_mat;

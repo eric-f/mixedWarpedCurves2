@@ -2,10 +2,10 @@
 % Please edit documentation in R/sim_warping_mixture.R
 \name{base_shape}
 \alias{base_shape}
-\title{Fixed base shape based on beta-density}
+\title{Fixed base shape based on symmetric beta-density}
 \usage{
 base_shape(x, a = 2)
 }
 \description{
-Fixed base shape based on beta-density
+Fixed base shape based on symmetric beta-density
 }

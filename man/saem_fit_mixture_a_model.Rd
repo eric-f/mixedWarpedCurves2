@@ -2,7 +2,8 @@
 % Please edit documentation in R/RcppExports.R
 \name{saem_fit_mixture_a_model}
 \alias{saem_fit_mixture_a_model}
-\title{Internal function for fitting the model by SAEM}
+\title{Internal function for fitting the model by SAEM
+(obsolete and experimental, probably an incorrect implementation)}
 \usage{
 saem_fit_mixture_a_model(curve_list, pars_list, control_list, y_scaling_factor,
   trace)
@@ -19,4 +20,5 @@ for the time and value of the functional data}
 }
 \description{
 Internal function for fitting the model by SAEM
+(obsolete and experimental, probably an incorrect implementation)
 }

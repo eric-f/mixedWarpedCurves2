@@ -5,7 +5,8 @@
 \title{Simulate warping mixture}
 \usage{
 sim_warping_mixture(n, p, kappa, tau = 1, ni = 1001, mu_sh = -15,
-  mu_sc = 500, sd_sh = 5, sd_sc = 50, sd_err = 5)
+  mu_sc = 500, sd_sh = 5, sd_sc = 50, sd_err = 5, shape_a = 2,
+  shape_b = 2)
 }
 \description{
 Simulate warping mixture
