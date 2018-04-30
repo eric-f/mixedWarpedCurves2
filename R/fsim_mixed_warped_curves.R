@@ -67,12 +67,18 @@ fsim_mixed_warped_curves <- function(y,
   ## --------------------------------------------------------------------------
   data_lst <- split(data, data$id)
   n_curve <- length(data_lst)
-  if(is.null(init_clust) |
-     length(init_clust) != n_curve |
-     min(init_clust) < 1 |
-     max(init_clust) > n_clust){
+  if(is.null(init_clust)){
     print("Randomizing initial cluster labels...")
     init_clust <- sample(n_clust, n_curve, replace=TRUE)
+  }
+  else{
+    if(length(init_clust) != n_curve |
+       any(is.na(init_clust)) |
+       min(init_clust, na.rm = T) < 1 |
+       max(init_clust, na.rm = T) > n_clust){
+      print("Invalid initial cluster labels. Will use random clustering configuration as starting value...")
+      init_clust <- sample(n_clust, n_curve, replace=TRUE)
+    }
   }
   for(i in seq(along=data_lst)){
     data_lst[[i]]$init_clust = init_clust[i]

@@ -1,0 +1,272 @@
+---
+title: "mixedWarpedCurves2"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F)
+library(mixedWarpedCurves2)
+library(gtools)
+library(ggplot2)
+library(plyr)
+library(dplyr)
+```
+
+# Model-based curve registration
+```{r, fig.width=4, fig.show='hold'}
+set.seed(0)
+kappa0 <- matrix(c(1,2,3,2,1) / 9, nrow=1)
+## Hack to sim sinusoidal curve
+sim_data <- 
+  sim_warping_mixture(n = 50, ni = 101, p = 1, 
+                      kappa = kappa0, tau = 10, 
+                      sd_sh = 50, sd_sc = 100, 
+                      sd_err = 10,
+                      shape_a = 2, shape_b = 2)
+sim_data$y1 = sin(sim_data$warped_x*2*pi) + sin(sim_data$warped_x*4*pi)
+sim_data$y2 = sim_data$sh + sim_data$sc * sim_data$y1
+sim_data$resid = sim_data$y - (sim_data$sh + sim_data$sc * sim_data$y0)
+sim_data$y = sim_data$y2 + sim_data$resid
+
+
+ggplot(sim_data) + 
+  geom_line(aes(x=x, y=y, col=id), show.legend = F) + 
+  labs(x="Time, t", y=expression(paste("Observed curve, ", y[i](t))))
+
+ggplot(sim_data) + 
+  geom_line(aes(x=x, y=warped_x, col=id), show.legend = F) + 
+  labs(x="Time, t", 
+       y=expression(paste("Warping function, ", h[i](t))))
+```
+
+## Estimate model parameters and warping functions by SAEM
+```{r, echo=TRUE, cache=TRUE}
+out <- fsim_mixed_warped_curves(
+  y = sim_data$y,
+  obs_time = sim_data$x,
+  curve_id = sim_data$id,
+  saem_control = control_saem(
+    n_saem_iter = 1000,
+    n_saem_burn = 100,
+    n_mcmc_burn = 5,
+    h_knots = seq(0, 1, length=5),
+    f_knots = seq(0, 1, length=7)
+  ))
+
+out_df <- ldply(out$curves, function(crv){
+  data.frame(
+    id = as.character(c(crv$curve_id)),
+    x = c(crv$x),
+    y = c(crv$y),
+    warped_x = c(crv$warped_x),
+    fitted_y = c(crv$fitted_y)
+  )
+})
+```
+
+## Fitted curves and registered curves
+```{r, fig.width=4, fig.show='hold'}
+ggplot(out_df) + 
+  geom_line(aes(x=x, y=y, group=id), size=0.3) + 
+  geom_line(aes(x=x, y=fitted_y, col=id), 
+            size=0.3, show.legend = F) + 
+  labs(x="Time, t", 
+       y=expression(paste("Fitted curve, ", hat(y)[i](t))))
+
+ggplot(out_df) + 
+  geom_line(aes(x=warped_x, y=y, col=id),
+            show.legend = F) + 
+  labs(x=expression(paste("Predicted warped time, ", h[i](t))), 
+       y=expression(y[i](t)))
+```
+
+```{r, fig.width=12}
+sigma2_track <- out$pars_track$sigma2_track
+qplot(x=seq(along=sigma2_track),
+      y=sigma2_track, 
+      geom="line") + 
+  labs(x="Iterations", 
+       y=expression(paste("Estimated ", sigma[epsilon]^2))) + 
+  coord_cartesian(ylim=c(sigma2_track[50], min(sigma2_track)))
+  
+```
+
+# Clustering on phase variation
+```{r, fig.width=4, fig.show='hold'}
+set.seed(0)
+## Simulate curves with a mixture of warping
+kappa1 <- c(1,5,5,1)
+kappa1 <- kappa1 / sum(kappa1)
+kappa2 <- c(5,1,1,5)
+kappa2 <- kappa2 / sum(kappa2)
+kappa3 <- c(0.5,0.5,2.5,2.5)
+kappa3 <- kappa3 / sum(kappa3)
+kappa4 <- c(2.5,2.5,0.5,0.5)
+kappa4 <- kappa4 / sum(kappa4)
+mix_data <- 
+  sim_warping_mixture(n = 200, ni = 41, p = rep(1/4, 4), 
+                      kappa = rbind(kappa1,
+                                    kappa2,
+                                    kappa3,
+                                    kappa4), 
+                      tau = 20, 
+                      sd_sh = 100, sd_sc = 100, 
+                      sd_err = 30,
+                      shape_a = 2, shape_b = 2)
+
+
+ggplot(mix_data) + 
+  geom_line(aes(x=x, y=y, group=id, col=clust), 
+            show.legend = F, size=0.3) + 
+  labs(x="Time, t", 
+       y=expression(paste("Observed curve, ", y[i](t))),
+       color="Cluster")
+
+ggplot(mix_data) + 
+  geom_line(aes(x=x, y=warped_x, group=id, col=clust), 
+            show.legend = T, size=0.3) + 
+  labs(x="Time, t", 
+       y=expression(paste("Warping function, ", h[i](t))),
+       color="Cluster")
+```
+
+## Fit mixture of warping function by SAEM
+```{r, echo=TRUE, message=FALSE, cache=TRUE}
+clust_out <- fsim_unimodal(
+  y = mix_data$y,
+  obs_time = mix_data$x,
+  curve_id = mix_data$id,
+  n_clust = 4,
+  saem_control = control_saem(
+    n_saem_iter = 2000,
+    n_saem_burn = 200,
+    n_mcmc_burn = 5,
+    h_knots = seq(0, 1, length=5)
+  ))
+```
+
+```{r}
+clust_out_df <- ldply(clust_out$curves, function(crv){
+  data.frame(
+    id = as.character(c(crv$curve_id+1)),
+    x = c(crv$x),
+    y = c(crv$y),
+    estimated_warped_x = c(crv$warped_x),
+    fitted_y = c(crv$fitted_y),
+    pred_clust = as.character(which.max(crv$sapprox_cluster_membership))
+  )
+}) %>%
+  dplyr::inner_join(., select(mix_data, id, x, clust, warped_x), by=c("id", "x")) %>%
+  mutate(clust = letters[clust])
+
+```
+
+```{r, echo=TRUE, message=FALSE, cache=TRUE}
+flex_clust_out <- fsim_mixed_warped_curves(
+  y = mix_data$y,
+  obs_time = mix_data$x,
+  curve_id = mix_data$id,
+  n_clust = 4,
+  saem_control = control_saem(
+    n_saem_iter = 2000,
+    n_saem_burn = 200,
+    n_mcmc_burn = 5,
+    h_knots = seq(0, 1, length=7),
+    f_knots = seq(0, 1, length=3)
+  ))
+```
+
+```{r}
+flex_clust_out_df <- ldply(flex_clust_out$curves, function(crv){
+  data.frame(
+    id = as.character(c(crv$curve_id+1)),
+    x = c(crv$x),
+    y = c(crv$y),
+    estimated_warped_x = c(crv$warped_x),
+    fitted_y = c(crv$fitted_y),
+    pred_clust = as.character(which.max(crv$sapprox_cluster_membership))
+  )
+}) %>%
+  dplyr::inner_join(., select(mix_data, id, x, clust, warped_x), by=c("id", "x")) %>%
+  mutate(clust = letters[clust])
+```
+
+```{r}
+true_clust <- mix_data[mix_data$x==0, "clust"]
+pred_clust <- sapply(clust_out$curves,
+                  function(crv){
+                    which.max(crv$sapprox_cluster_membership)
+                    })
+flex_pred_clust <- sapply(flex_clust_out$curves,
+                          function(crv){
+                            which.max(crv$sapprox_cluster_membership)
+                          })
+table(true_clust, pred_clust)
+mclust::adjustedRandIndex(true_clust, pred_clust)
+table(true_clust, flex_pred_clust)
+mclust::adjustedRandIndex(true_clust, flex_pred_clust)
+```
+
+## Fitted curves and registered curves
+```{r}
+ggplot(clust_out_df) + 
+  geom_line(aes(x=x, y=fitted_y, group=id), 
+            size=0.3, show.legend = F) + 
+  geom_line(aes(x=x, y=y, group=id, col=pred_clust), 
+            size=0.3, show.legend = F) + 
+  facet_grid(clust~pred_clust) +
+  labs(x="Time, t", 
+       y=expression(paste("Fitted curve, ", hat(y)[i](t))))
+
+
+ggplot(clust_out_df) + 
+  geom_line(aes(x=x, y=warped_x, group=id), 
+            size=0.3, show.legend = F) + 
+  geom_line(aes(x=x, y=estimated_warped_x, group=id, col=pred_clust), 
+            size=0.3, show.legend = F) + 
+  facet_grid(clust~pred_clust) +
+  labs(x="Time, t", 
+       y=expression(paste("Warping Function, ", hat(h)[i](t))))
+
+
+sigma2_track <- clust_out$pars_track$sigma2_track
+qplot(x=seq(along=sigma2_track),
+      y=sigma2_track, 
+      geom="line") + 
+  labs(x="Iterations", 
+       y=expression(paste("Estimated ", sigma[epsilon]^2))) + 
+  coord_cartesian(ylim=c(sigma2_track[40], min(sigma2_track)))
+  
+```
+
+```{r}
+ggplot(flex_clust_out_df) + 
+  geom_line(aes(x=x, y=fitted_y, group=id), 
+            size=0.3, show.legend = F) + 
+  geom_line(aes(x=x, y=y, group=id, col=pred_clust), 
+            size=0.3, show.legend = F) + 
+  facet_grid(clust~pred_clust) +
+  labs(x="Time, t", 
+       y=expression(paste("Fitted curve, ", hat(y)[i](t))))
+
+
+ggplot(flex_clust_out_df) + 
+  geom_line(aes(x=x, y=warped_x, group=id), 
+            size=0.3, show.legend = F) + 
+  geom_line(aes(x=x, y=estimated_warped_x, group=id, col=pred_clust), 
+            size=0.3, show.legend = F) + 
+  facet_grid(clust~pred_clust) +
+  labs(x="Time, t", 
+       y=expression(paste("Warping Function, ", hat(h)[i](t))))
+
+
+sigma2_track <- flex_clust_out$pars_track$sigma2_track
+qplot(x=seq(along=sigma2_track),
+      y=sigma2_track, 
+      geom="line") + 
+  labs(x="Iterations", 
+       y=expression(paste("Estimated ", sigma[epsilon]^2))) + 
+  coord_cartesian(ylim=c(max(sigma2_track[100:1000]), min(sigma2_track)))
+  
+```
+
