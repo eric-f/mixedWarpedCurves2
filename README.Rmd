@@ -1,6 +1,10 @@
 ---
-title: "mixedWarpedCurves2"
-output: github_document
+title: "R package: mixedWarpedCurves2"
+output: 
+  github_document:
+    toc: true
+    toc_depth: 1
+    pandoc_args: --webtex
 ---
 
 ```{r setup, include=FALSE}
@@ -12,8 +16,39 @@ library(plyr)
 library(dplyr)
 ```
 
-# Model-based curve registration
-```{r, fig.width=4, fig.show='hold'}
+# Installation
+
+To install the latest version:
+```
+library(devtools)
+devtools::install_github('eric-f/mixedWarpedCurves2')
+```
+
+# Model
+We model the functional data as noisy observations of latent curves, $y_i$'s, at time $t_{ij}$, as $y_{ij} = y_i(t) + \epsilon_{ij}.$
+
+The latent curve, $y_i(t) = f_i \circ h_i(t),$ is composed of two functions, $f_i$ and $h_i$, representing amplitude and phase variations. Specifically, the amplitude function is rank-1: $f_i = a_{i,sh} + a_{i,sc} f(t)$, with a common base shape $f$ whereas the warping function $h_i:[0, 1]\to[0, 1]$ is continuous and strictly increasing.
+
+## Amplitude function
+
+The base shape, $f$ is either a known function or modelled as a spline that is to be estimated. The amplitude random effect, $(a_{i,sh}, a_{i,sc})$, is Gaussian with mean $(\mu_{sh}, \mu_{sc})$ and variance-covariance matrix $\Sigma$.
+
+`fsim_unimodal()` fit the fixed base shape version where $f(t) = -4t(1-t)$.
+
+`fsim_mixed_warped_curves()` fit the unknown base shape version of the model. The base shape is modelled using B-spline basis. The order and knot locations of the spline are specified via the options `f_order` and `f_knots` in `control_saem()`.
+
+## Warping function
+
+The warping function is modelled using B-spline basis,
+$$h_i(t) = \sum_{k=1}^{K_h} w_{i,k}B_k(t),$$
+where $0\equiv w_{i,1} \leq \cdots \leq w_{i,K_h} \equiv=1$. The first difference of the random coefficients,
+$(w_{i,2}, w_{i,3}-w_{i,2}, \ldots, 1-w_{i,K_h-1}),$
+follows a Dirichlet distribution whose mean is fixed such that $E(h_i(t))=t$.
+
+The order and knot locations of the spline are specified via the options `h_order` and `h_knots` in `control_saem()`. 
+
+# Example 1: Curve registration
+```{r example-1-data, fig.width=4, fig.show='hold'}
 set.seed(0)
 kappa0 <- matrix(c(1,2,3,2,1) / 9, nrow=1)
 ## Hack to sim sinusoidal curve
@@ -40,7 +75,7 @@ ggplot(sim_data) +
 ```
 
 ## Estimate model parameters and warping functions by SAEM
-```{r, echo=TRUE, cache=TRUE}
+```{r example-1-saem, echo=TRUE, cache=TRUE}
 out <- fsim_mixed_warped_curves(
   y = sim_data$y,
   obs_time = sim_data$x,
@@ -53,6 +88,9 @@ out <- fsim_mixed_warped_curves(
     f_knots = seq(0, 1, length=7)
   ))
 
+```
+
+```{r example-1-output}
 out_df <- ldply(out$curves, function(crv){
   data.frame(
     id = as.character(c(crv$curve_id)),
@@ -65,7 +103,7 @@ out_df <- ldply(out$curves, function(crv){
 ```
 
 ## Fitted curves and registered curves
-```{r, fig.width=4, fig.show='hold'}
+```{r example-1-plots, fig.width=4, fig.show='hold'}
 ggplot(out_df) + 
   geom_line(aes(x=x, y=y, group=id), size=0.3) + 
   geom_line(aes(x=x, y=fitted_y, col=id), 
@@ -76,11 +114,11 @@ ggplot(out_df) +
 ggplot(out_df) + 
   geom_line(aes(x=warped_x, y=y, col=id),
             show.legend = F) + 
-  labs(x=expression(paste("Predicted warped time, ", h[i](t))), 
+  labs(x=expression(paste("Predicted warped time, ", hat(h)[i](t))), 
        y=expression(y[i](t)))
 ```
 
-```{r, fig.width=12}
+```{r example-1-tracks, fig.width=12}
 sigma2_track <- out$pars_track$sigma2_track
 qplot(x=seq(along=sigma2_track),
       y=sigma2_track, 
@@ -91,8 +129,8 @@ qplot(x=seq(along=sigma2_track),
   
 ```
 
-# Clustering on phase variation
-```{r, fig.width=4, fig.show='hold'}
+# Example 2: Clustering on phase variation
+```{r example-2-data, fig.width=4, fig.show='hold'}
 set.seed(0)
 ## Simulate curves with a mixture of warping
 kappa1 <- c(1,5,5,1)
@@ -131,7 +169,7 @@ ggplot(mix_data) +
 ```
 
 ## Fit mixture of warping function by SAEM
-```{r, echo=TRUE, message=FALSE, cache=TRUE}
+```{r example-2-saem-unimodal, echo=TRUE, message=FALSE, cache=TRUE}
 clust_out <- fsim_unimodal(
   y = mix_data$y,
   obs_time = mix_data$x,
@@ -143,9 +181,10 @@ clust_out <- fsim_unimodal(
     n_mcmc_burn = 5,
     h_knots = seq(0, 1, length=5)
   ))
+
 ```
 
-```{r}
+```{r example-2-saem-unimodal-output}
 clust_out_df <- ldply(clust_out$curves, function(crv){
   data.frame(
     id = as.character(c(crv$curve_id+1)),
@@ -158,10 +197,9 @@ clust_out_df <- ldply(clust_out$curves, function(crv){
 }) %>%
   dplyr::inner_join(., select(mix_data, id, x, clust, warped_x), by=c("id", "x")) %>%
   mutate(clust = letters[clust])
-
 ```
 
-```{r, echo=TRUE, message=FALSE, cache=TRUE}
+```{r example-2-saem-flexShape, echo=TRUE, message=FALSE, cache=TRUE}
 flex_clust_out <- fsim_mixed_warped_curves(
   y = mix_data$y,
   obs_time = mix_data$x,
@@ -176,7 +214,7 @@ flex_clust_out <- fsim_mixed_warped_curves(
   ))
 ```
 
-```{r}
+```{r example-2-saem-flexShape-output}
 flex_clust_out_df <- ldply(flex_clust_out$curves, function(crv){
   data.frame(
     id = as.character(c(crv$curve_id+1)),
@@ -191,7 +229,7 @@ flex_clust_out_df <- ldply(flex_clust_out$curves, function(crv){
   mutate(clust = letters[clust])
 ```
 
-```{r}
+```{r example-2-tab, include=FALSE}
 true_clust <- mix_data[mix_data$x==0, "clust"]
 pred_clust <- sapply(clust_out$curves,
                   function(crv){
@@ -208,7 +246,7 @@ mclust::adjustedRandIndex(true_clust, flex_pred_clust)
 ```
 
 ## Fitted curves and registered curves
-```{r}
+```{r example-2-unimodal-plots}
 ggplot(clust_out_df) + 
   geom_line(aes(x=x, y=fitted_y, group=id), 
             size=0.3, show.legend = F) + 
@@ -239,7 +277,7 @@ qplot(x=seq(along=sigma2_track),
   
 ```
 
-```{r}
+```{r example-2-flexShape-plots}
 ggplot(flex_clust_out_df) + 
   geom_line(aes(x=x, y=fitted_y, group=id), 
             size=0.3, show.legend = F) + 
@@ -267,6 +305,8 @@ qplot(x=seq(along=sigma2_track),
   labs(x="Iterations", 
        y=expression(paste("Estimated ", sigma[epsilon]^2))) + 
   coord_cartesian(ylim=c(max(sigma2_track[100:1000]), min(sigma2_track)))
-  
 ```
 
+# Reference
+Fu, E. and Heckman, N. (2017). Model-based curve registration via stochastic approximation EM algorithm. \textit{arXiv preprint arXiv:1712.07265}
+https://arxiv.org/abs/1712.07265
