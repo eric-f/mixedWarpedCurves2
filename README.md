@@ -94,6 +94,8 @@ Example 2: Clustering on phase variation
 Fit mixture of warping function by SAEM
 ---------------------------------------
 
+### Known unimodal shape
+
 ``` r
 clust_out <- fsim_unimodal(
   y = mix_data$y,
@@ -124,6 +126,8 @@ clust_out <- fsim_unimodal(
     ##    0.2800
     ## 
     ## 10.0%...15.0%...20.0%...25.0%...30.0%...35.0%...40.0%...45.0%...50.0%...55.0%...60.0%...65.0%...70.0%...75.0%...80.0%...85.0%...90.0%...95.0%...(Done)
+
+### Unknown base shape
 
 ``` r
 flex_clust_out <- fsim_mixed_warped_curves(
@@ -161,10 +165,14 @@ flex_clust_out <- fsim_mixed_warped_curves(
     ## 
     ## 10.0%...15.0%...20.0%...25.0%...30.0%...35.0%...40.0%...45.0%...50.0%...55.0%...60.0%...65.0%...70.0%...75.0%...80.0%...85.0%...90.0%...95.0%...(Done)
 
-Fitted curves and registered curves
------------------------------------
+Fitted curves and clustering on phase variation
+-----------------------------------------------
+
+### Known unimodal shape
 
 ![](README_files/figure-markdown_github-ascii_identifiers/example-2-unimodal-plots-1.png)![](README_files/figure-markdown_github-ascii_identifiers/example-2-unimodal-plots-2.png)![](README_files/figure-markdown_github-ascii_identifiers/example-2-unimodal-plots-3.png)
+
+### Unknown base shape
 
 ![](README_files/figure-markdown_github-ascii_identifiers/example-2-flexShape-plots-1.png)![](README_files/figure-markdown_github-ascii_identifiers/example-2-flexShape-plots-2.png)![](README_files/figure-markdown_github-ascii_identifiers/example-2-flexShape-plots-3.png)
 

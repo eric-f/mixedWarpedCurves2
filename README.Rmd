@@ -169,6 +169,7 @@ ggplot(mix_data) +
 ```
 
 ## Fit mixture of warping function by SAEM
+### Known unimodal shape
 ```{r example-2-saem-unimodal, echo=TRUE, message=FALSE, cache=TRUE}
 clust_out <- fsim_unimodal(
   y = mix_data$y,
@@ -199,6 +200,7 @@ clust_out_df <- ldply(clust_out$curves, function(crv){
   mutate(clust = letters[clust])
 ```
 
+### Unknown base shape
 ```{r example-2-saem-flexShape, echo=TRUE, message=FALSE, cache=TRUE}
 flex_clust_out <- fsim_mixed_warped_curves(
   y = mix_data$y,
@@ -245,7 +247,8 @@ table(true_clust, flex_pred_clust)
 mclust::adjustedRandIndex(true_clust, flex_pred_clust)
 ```
 
-## Fitted curves and registered curves
+## Fitted curves and clustering on phase variation
+### Known unimodal shape
 ```{r example-2-unimodal-plots}
 ggplot(clust_out_df) + 
   geom_line(aes(x=x, y=fitted_y, group=id), 
@@ -277,6 +280,7 @@ qplot(x=seq(along=sigma2_track),
   
 ```
 
+### Unknown base shape
 ```{r example-2-flexShape-plots}
 ggplot(flex_clust_out_df) + 
   geom_line(aes(x=x, y=fitted_y, group=id), 
