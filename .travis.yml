@@ -1,8 +1,10 @@
 # R for travis: see documentation at https://docs.travis-ci.com/user/languages/r
 
-os: osx
+os:
+  - linux
+  - osx
 before_install:
-- brew install gsl
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install gsl; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install libgsl0ldbl; fi
 language: R
-sudo: false
 cache: packages

@@ -44,6 +44,7 @@ beta_shape <- function(x, a=2, b=3){
 #' @param shape_b numeric, non-negative parameters of the Beta distribution
 #' @import stats splines gtools
 #' @examples
+#' \dontrun{
 #' require(ggplot2)
 #' require(fda)
 #' kappa0 <- c(1,2,2,1)
@@ -76,7 +77,7 @@ beta_shape <- function(x, a=2, b=3){
 #'   geom_line(aes(x=x, y=y, group=id, col=clust))
 #' ggplot(dat0) +
 #'   geom_line(aes(x=x, y=warped_x, group=id, col=clust))
-#'
+#' }
 #' @export
 sim_warping_mixture <- function(n, p, kappa,
                                 tau=1, ni=1001,
