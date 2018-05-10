@@ -40,6 +40,7 @@ with a unimodal base shape. The base shape is negative of a standardized beta de
 function with minimum equals to -1
 }
 \examples{
+\donttest{
 require(ggplot2)
 require(fda)
 kappa0 <- c(1,2,2,1)
@@ -72,5 +73,5 @@ ggplot(dat0) +
   geom_line(aes(x=x, y=y, group=id, col=clust))
 ggplot(dat0) +
   geom_line(aes(x=x, y=warped_x, group=id, col=clust))
-
+}
 }

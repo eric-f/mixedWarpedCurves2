@@ -44,7 +44,7 @@ beta_shape <- function(x, a=2, b=3){
 #' @param shape_b numeric, non-negative parameters of the Beta distribution
 #' @import stats splines gtools
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' require(ggplot2)
 #' require(fda)
 #' kappa0 <- c(1,2,2,1)
