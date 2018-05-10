@@ -16,3 +16,4 @@
 ^src/\.DS_Store$
 ^test/\.DS_Store$
 ^\.Rproj\.user/$
+^\.travis\.yml$
