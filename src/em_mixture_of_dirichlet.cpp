@@ -134,8 +134,7 @@ Rcpp::List em_mixture_of_dirichlet(
             alpha_hat.col(m) = new_alpha_hat;
           }
           else{
-            Rcpp::Rcout << "Maximum step-halving reached. Some estimated alpha still negative." << std::endl;
-            throw;
+            Rcpp::stop("Maximum step-halving reached. Some estimated alpha still negative.");
           }
           // Check convergence
           if(arma::max(arma::abs(newton_update_step)) < newton_abs_tol) {

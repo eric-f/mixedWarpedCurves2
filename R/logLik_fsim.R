@@ -1,8 +1,10 @@
 #' Observed data log-likelihood of the registration model
 #'
-#' Compute log-likelihood of the fitted model
+#' Compute log-likelihood of the fitted model by sampling based approximation
 #' @param saemObj fitted registration model
 #' @param method method for computing the log-likelihood
+#' @param n_sim number of Monte Carlo sample
+#' @param seed seed for random number generator
 logLik_fsim <- function(saemObj, method=c("joint_mc", "joint_is", "marginal_is", "mcmc"), n_sim=10, seed=0){
   # kappa (<-> identity)
   tmp_y <- tmp_x <- seq(0, 1, length=1000)

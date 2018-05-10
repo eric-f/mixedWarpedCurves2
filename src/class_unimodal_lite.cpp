@@ -42,7 +42,7 @@ Unimodal_Model_Lite::Unimodal_Model_Lite(Rcpp::List pars_list,
 // Initialization
 void Unimodal_Model_Lite::generate_chol_centering_mat(){
   if(dim_w < 2)
-    throw("Dimension of the warping function must be bigger than 2");
+    Rcpp::stop("Dimension of the warping function must be bigger than 2");
   for(int d = 0; d < dim_z; ++d){
     for(int idx_r = d; idx_r < dim_z + 1; ++idx_r){
       if(d == idx_r){

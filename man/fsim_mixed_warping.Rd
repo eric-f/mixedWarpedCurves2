@@ -16,7 +16,13 @@ fsim_mixed_warping(y, obs_time, curve_id, init_clust = NULL, n_clust = 1,
 
 \item{curve_id}{a vector of curve IDs}
 
-\item{saem_control}{a list of values to control the MCMC and stochastic approximation}
+\item{init_clust}{vector of inital clutering label with length equals to the number of curves}
+
+\item{n_clust}{integer, number of clusters}
+
+\item{saem_control}{a list of values to control the MCMC and stochastic approximation. See control_saem().}
+
+\item{trace}{if TRUE, tracing information of the estimated parameters are printed}
 }
 \description{
 This function fits the model \deqn{Y_i(t) = a_{i,sh} + a_{i,sc} f \circ h_i(y)}

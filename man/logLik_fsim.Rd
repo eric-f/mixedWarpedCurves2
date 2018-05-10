@@ -11,7 +11,11 @@ logLik_fsim(saemObj, method = c("joint_mc", "joint_is", "marginal_is",
 \item{saemObj}{fitted registration model}
 
 \item{method}{method for computing the log-likelihood}
+
+\item{n_sim}{number of Monte Carlo sample}
+
+\item{seed}{seed for random number generator}
 }
 \description{
-Compute log-likelihood of the fitted model
+Compute log-likelihood of the fitted model by sampling based approximation
 }

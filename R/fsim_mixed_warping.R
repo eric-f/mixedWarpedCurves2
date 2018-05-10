@@ -9,7 +9,10 @@
 #' @param y a vector of observed curves
 #' @param obs_time a vector of the observation times
 #' @param curve_id a vector of curve IDs
-#' @param saem_control a list of values to control the MCMC and stochastic approximation
+#' @param init_clust vector of inital clutering label with length equals to the number of curves
+#' @param n_clust integer, number of clusters
+#' @param saem_control a list of values to control the MCMC and stochastic approximation. See control_saem().
+#' @param trace if TRUE, tracing information of the estimated parameters are printed
 #' @importFrom Rcpp evalCpp
 #' @useDynLib mixedWarpedCurves2
 fsim_mixed_warping <- function(y,

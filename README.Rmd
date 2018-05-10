@@ -64,6 +64,8 @@ The order and knot locations of the spline are specified via the options `h_orde
 # data_ex1$y2 = data_ex1$sh + data_ex1$sc * data_ex1$y1
 # data_ex1$resid = data_ex1$y - (data_ex1$sh + data_ex1$sc * data_ex1$y0)
 # data_ex1$y = data_ex1$y2 + data_ex1$resid
+# data_ex1$y0 = data_ex1$y2
+# data_ex1$y1 <- data_ex1$y2 <- data_ex1$resid <- NULL
 # save(data_ex1, file = "data/example-data-1.rda")
 load("data/example-data-1.rda")
 

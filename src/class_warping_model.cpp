@@ -82,7 +82,6 @@ double Warping_Model::Do_One_Newton_Update(int max_inner_iter) {
     Rcpp::Rcout << "a: " << a << std::endl;
     Rcpp::Rcout << "z: " << z << std::endl;
     tmp_tol = -99; // Terminate Newton-Raphson
-    // throw;
   }
   return tmp_tol;
 }
