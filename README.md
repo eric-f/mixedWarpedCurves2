@@ -55,7 +55,7 @@ The order and knot locations of the spline are specified via the options `h_orde
 Example 1: Curve registration
 =============================
 
-![](README_files/figure-markdown_github-ascii_identifiers/example-1-data-1.png)![](README_files/figure-markdown_github-ascii_identifiers/example-1-data-2.png)
+![](man/figures/README-example-1-data-1.png)![](man/figures/README-example-1-data-2.png)
 
 Estimate model parameters and warping functions by SAEM
 -------------------------------------------------------
@@ -93,14 +93,14 @@ out <- fsim_mixed_warped_curves(
 Fitted curves and registered curves
 -----------------------------------
 
-![](README_files/figure-markdown_github-ascii_identifiers/example-1-plots-1.png)![](README_files/figure-markdown_github-ascii_identifiers/example-1-plots-2.png)
+![](man/figures/README-example-1-plots-1.png)![](man/figures/README-example-1-plots-2.png)
 
-![](README_files/figure-markdown_github-ascii_identifiers/example-1-tracks-1.png)
+![](man/figures/README-example-1-tracks-1.png)
 
 Example 2: Clustering on phase variation
 ========================================
 
-![](README_files/figure-markdown_github-ascii_identifiers/example-2-data-1.png)![](README_files/figure-markdown_github-ascii_identifiers/example-2-data-2.png)
+![](man/figures/README-example-2-data-1.png)![](man/figures/README-example-2-data-2.png)
 
 Fit mixture of warping function by SAEM
 ---------------------------------------
@@ -125,16 +125,16 @@ clust_out <- fsim_unimodal(
     ## Entering SAEM loop...
     ## 0.0%...5.0%...Initialize clustering with user inputs...
     ## cluster_size
-    ##    60.0000
-    ##    46.0000
-    ##    51.0000
-    ##    43.0000
+    ##    38.0000
+    ##    64.0000
+    ##    59.0000
+    ##    39.0000
     ## 
     ## p_clusters
-    ##    0.3000
-    ##    0.2300
-    ##    0.2550
-    ##    0.2150
+    ##    0.1900
+    ##    0.3200
+    ##    0.2950
+    ##    0.1950
     ## 
     ## 10.0%...15.0%...20.0%...25.0%...30.0%...35.0%...40.0%...45.0%...50.0%...55.0%...60.0%...65.0%...70.0%...75.0%...80.0%...85.0%...90.0%...95.0%...(Done)
 
@@ -163,16 +163,16 @@ flex_clust_out <- fsim_mixed_warped_curves(
     ## Entering SAEM loop...
     ## 0.0%...5.0%...Initialize clustering with user inputs...
     ## cluster_size
-    ##    58.0000
-    ##    48.0000
-    ##    41.0000
-    ##    53.0000
+    ##    46.0000
+    ##    63.0000
+    ##    44.0000
+    ##    47.0000
     ## 
     ## p_clusters
-    ##    0.2900
-    ##    0.2400
-    ##    0.2050
-    ##    0.2650
+    ##    0.2300
+    ##    0.3150
+    ##    0.2200
+    ##    0.2350
     ## 
     ## 10.0%...15.0%...20.0%...25.0%...30.0%...35.0%...40.0%...45.0%...50.0%...55.0%...60.0%...65.0%...70.0%...75.0%...80.0%...85.0%...90.0%...95.0%...(Done)
 
@@ -181,11 +181,11 @@ Fitted curves and clustering on phase variation
 
 ### Known unimodal shape
 
-![](README_files/figure-markdown_github-ascii_identifiers/example-2-unimodal-plots-1.png)![](README_files/figure-markdown_github-ascii_identifiers/example-2-unimodal-plots-2.png)![](README_files/figure-markdown_github-ascii_identifiers/example-2-unimodal-plots-3.png)
+![](man/figures/README-example-2-unimodal-plots-1.png)![](man/figures/README-example-2-unimodal-plots-2.png)![](man/figures/README-example-2-unimodal-plots-3.png)
 
 ### Unknown base shape
 
-![](README_files/figure-markdown_github-ascii_identifiers/example-2-flexShape-plots-1.png)![](README_files/figure-markdown_github-ascii_identifiers/example-2-flexShape-plots-2.png)![](README_files/figure-markdown_github-ascii_identifiers/example-2-flexShape-plots-3.png)
+![](man/figures/README-example-2-flexShape-plots-1.png)![](man/figures/README-example-2-flexShape-plots-2.png)![](man/figures/README-example-2-flexShape-plots-3.png)
 
 Reference
 =========

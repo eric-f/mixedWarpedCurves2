@@ -10,7 +10,9 @@ output:
 [![Travis-CI Build Status](https://travis-ci.org/eric-f/mixedWarpedCurves2.svg?branch=master)](https://travis-ci.org/eric-f/mixedWarpedCurves2)
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = F)
+knitr::opts_chunk$set(
+  echo = F, 
+  fig.path = "man/figures/README-")
 library(mixedWarpedCurves2)
 library(gtools)
 library(ggplot2)
@@ -91,7 +93,7 @@ ggplot(data_ex1) +
 ```
 
 ## Estimate model parameters and warping functions by SAEM
-```{r example-1-saem, echo=TRUE, cache=TRUE}
+```{r example-1-saem, echo=TRUE, cache=FALSE}
 out <- fsim_mixed_warped_curves(
   y = data_ex1$y,
   obs_time = data_ex1$x,
@@ -188,7 +190,7 @@ ggplot(data_ex2) +
 
 ## Fit mixture of warping function by SAEM
 ### Known unimodal shape
-```{r example-2-saem-unimodal, echo=TRUE, message=FALSE, cache=TRUE}
+```{r example-2-saem-unimodal, echo=TRUE, message=FALSE, cache=FALSE}
 clust_out <- fsim_unimodal(
   y = data_ex2$y,
   obs_time = data_ex2$x,
@@ -219,7 +221,7 @@ clust_out_df <- ldply(clust_out$curves, function(crv){
 ```
 
 ### Unknown base shape
-```{r example-2-saem-flexShape, echo=TRUE, message=FALSE, cache=TRUE}
+```{r example-2-saem-flexShape, echo=TRUE, message=FALSE, cache=FALSE}
 flex_clust_out <- fsim_mixed_warped_curves(
   y = data_ex2$y,
   obs_time = data_ex2$x,
