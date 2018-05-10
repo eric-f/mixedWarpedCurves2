@@ -7,4 +7,6 @@ before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install gsl; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install libgsl0-dev; fi
 language: R
+r_github_packages:
+  kforner/rcpp_progress
 cache: packages
