@@ -4,11 +4,14 @@
 #' by maximum likelihood via a stochastic approximation EM algorithm. In the model,
 #' $f$ is a B-spline representing a common shape whereas \eqn{h_i:[0, 1] \to [0, 1]}
 #' is a monotone B-spline representing a random time transformation
-#' @param y a vector of observed curves
-#' @param obs_time a vector of the observation times
-#' @param curve_id a vector of curve IDs
-#' @param saem_control a list of values to control the MCMC and stochastic approximation
-#' @importFrom Rcpp evalCpp
+#' @param y vector of observed curves
+#' @param obs_time vector of the observation times
+#' @param curve_id vector of curve IDs
+#' @param init_clust vector of inital clutering label with length equals to the number of curves
+#' @param n_clust integer, number of clusters
+#' @param saem_control a list of values to control the MCMC and stochastic approximation. See control_saem().
+#' @param trace if TRUE, tracing information of the estimated parameters are printed
+#' @importFrom splines splineDesign
 #' @useDynLib mixedWarpedCurves2
 #' @export
 fsim_unimodal <- function(y,

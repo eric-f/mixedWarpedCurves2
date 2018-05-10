@@ -1,6 +1,6 @@
 #' Fit finite mixture of Dirichlet by EM algorithm
 #'
-#' @param w data
+#' @param w data on simplex with each column corresponding to one observation
 #' @param nclust number of mixture component
 #' @param init_clust vector of initial clustering label
 #' @param maxit maximum number of iterations for EM algorithm

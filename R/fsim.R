@@ -7,9 +7,11 @@
 #' @param y a vector of observed curves
 #' @param obs_time a vector of the observation times
 #' @param curve_id a vector of curve IDs
+#' @param n_clust number of clusters. Deprecated, please use fsim_mixed_warped_curves() for simultaneous registration and clustering
 #' @param saem_control a list of values to control the MCMC and stochastic approximation
-#' @importFrom Rcpp evalCpp
+#' @param trace if TRUE, tracing information of the estimated parameters are printed
 #' @useDynLib mixedWarpedCurves2
+#' @importFrom splines splineDesign
 #' @export
 fsim <- function(y,
                  obs_time,

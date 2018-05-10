@@ -7,6 +7,9 @@ devtools::use_package("gtools")
 #' @param y matrix, numeric matrix containing depth. Each column represents one dive.
 #' @param x numeric, common time grid at which the depths are recorded
 #' @param nCat integer, number of dive categories
+#' @param nIter integer, number of maximum EM iterations
+#' @param plot.est if TRUE, plot estimated shapes
+#' @importFrom graphics matplot
 fit_mixed_shape <- function(y, x=NULL, nCat=9, nIter=100, plot.est=FALSE){
   y_max <- max(abs(y))
   y = y / y_max

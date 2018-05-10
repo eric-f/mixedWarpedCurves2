@@ -12,6 +12,10 @@ fit_mixed_shape(y, x = NULL, nCat = 9, nIter = 100, plot.est = FALSE)
 \item{x}{numeric, common time grid at which the depths are recorded}
 
 \item{nCat}{integer, number of dive categories}
+
+\item{nIter}{integer, number of maximum EM iterations}
+
+\item{plot.est}{if TRUE, plot estimated shapes}
 }
 \description{
 This function fits the mixture of shape model using the EM algorithm

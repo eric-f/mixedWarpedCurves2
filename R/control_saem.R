@@ -17,6 +17,8 @@
 #' @param h_knots    Knot locations of the warping function splines (including boundary knots)
 #' @param f_n_knots  Number of equally spaced knots, from 0 to 1, to use if f_knots is not specified
 #' @param h_n_knots  Number of equally spaced knots, from 0 to 1, to use if h_knots is not specified
+#' @param ind_amp    TRUE if the amplitude shifting and scaling effects are assumed independent, FALSE otherwise
+#' @param seed       Random seed for MCMC sampler in C++
 #' @export
 control_saem <- function(n_saem_iter=1,
                          n_saem_burn=1,

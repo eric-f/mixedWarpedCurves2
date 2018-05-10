@@ -7,7 +7,7 @@
 mixture_of_dirichlet(w, nclust, init_clust = NULL, maxit = 20, nstart = 1)
 }
 \arguments{
-\item{w}{data}
+\item{w}{data on simplex with each column corresponding to one observation}
 
 \item{nclust}{number of mixture component}
 

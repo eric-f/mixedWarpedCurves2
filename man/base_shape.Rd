@@ -2,10 +2,15 @@
 % Please edit documentation in R/sim_warping_mixture.R
 \name{base_shape}
 \alias{base_shape}
-\title{Fixed base shape based on symmetric beta-density}
+\title{Make base shape by standarding a symmetric beta-density}
 \usage{
 base_shape(x, a = 2)
 }
+\arguments{
+\item{x}{numeric vector between 0 and 1 where the function is evaluated}
+
+\item{a}{non-negative parameters of the Beta distribution}
+}
 \description{
-Fixed base shape based on symmetric beta-density
+Internal function to be called by sim_warping_mixture()
 }

@@ -14,7 +14,11 @@ fsim(y, obs_time, curve_id, n_clust = 1, saem_control = control_saem(),
 
 \item{curve_id}{a vector of curve IDs}
 
+\item{n_clust}{number of clusters. Deprecated, please use fsim_mixed_warped_curves() for simultaneous registration and clustering}
+
 \item{saem_control}{a list of values to control the MCMC and stochastic approximation}
+
+\item{trace}{if TRUE, tracing information of the estimated parameters are printed}
 }
 \description{
 This function fits the model \deqn{Y_i(t) = a_{i,sh} + a_{i,sc} f \circ h_i(y)}
