@@ -12,7 +12,15 @@ R package: mixedWarpedCurves2
 Installation
 ============
 
-To install the latest version:
+The C++ code calls the GSL library which you might need to install first before the package can be compiled. On OSX, the easiest way is probably via [Homebrew](https://brew.sh),
+
+    brew install gsl
+
+On Linux, try,
+
+    sudo apt-get install libgsl0-dev
+
+Then to install the package in R,
 
     library(devtools)
     devtools::install_github('eric-f/mixedWarpedCurves2')
