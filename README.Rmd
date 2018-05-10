@@ -1,8 +1,8 @@
 ---
-title: "R package: mixedWarpedCurves2"
+title: "mixedWarpedCurves2"
 output: 
   github_document:
-    toc: true
+    toc: false
     toc_depth: 1
     pandoc_args: --webtex
 ---
@@ -22,17 +22,17 @@ library(dplyr)
 
 # Installation
 
-The C++ code calls the GSL library which you might need to install first before the package can be compiled. On OSX, the easiest way is probably via [Homebrew](https://brew.sh),
+The package requires GNU GSL library. On OSX, you can install the library via [Homebrew](https://brew.sh)
 ```
 brew install gsl
 ```
 
-On Linux, try,
+On Debian or Ubuntu, try
 ```
 sudo apt-get install libgsl0-dev
 ```
 
-Then to install the package in R,
+Then, to install the package in R
 ```
 library(devtools)
 devtools::install_github('eric-f/mixedWarpedCurves2')
@@ -59,7 +59,7 @@ where $0\equiv w_{i,1} \leq \cdots \leq w_{i,K_h} \equiv=1$. The first differenc
 $(w_{i,2}, w_{i,3}-w_{i,2}, \ldots, 1-w_{i,K_h-1}),$
 follows a Dirichlet distribution whose mean is fixed such that $E(h_i(t))=t$.
 
-The order and knot locations of the spline are specified via the options `h_order` and `h_knots` in `control_saem()`. 
+The order and knot locations of the spline can be specified via the options `h_order` and `h_knots` in `control_saem()`, which is also used to construct a list of control arguments for the MCMC and SAEM algorithms.
 
 # Example 1: Curve registration
 ```{r example-1-data, fig.width=4, fig.show='hold'}

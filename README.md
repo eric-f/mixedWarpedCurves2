@@ -1,26 +1,20 @@
-R package: mixedWarpedCurves2
+mixedWarpedCurves2
 ================
-
--   [Installation](#installation)
--   [Model](#model)
--   [Example 1: Curve registration](#example-1-curve-registration)
--   [Example 2: Clustering on phase variation](#example-2-clustering-on-phase-variation)
--   [Reference](#reference)
 
 [![Travis-CI Build Status](https://travis-ci.org/eric-f/mixedWarpedCurves2.svg?branch=master)](https://travis-ci.org/eric-f/mixedWarpedCurves2)
 
 Installation
 ============
 
-The C++ code calls the GSL library which you might need to install first before the package can be compiled. On OSX, the easiest way is probably via [Homebrew](https://brew.sh),
+The package requires GNU GSL library. On OSX, you can install the library via [Homebrew](https://brew.sh)
 
     brew install gsl
 
-On Linux, try,
+On Debian or Ubuntu, try
 
     sudo apt-get install libgsl0-dev
 
-Then to install the package in R,
+Then, to install the package in R
 
     library(devtools)
     devtools::install_github('eric-f/mixedWarpedCurves2')
@@ -50,7 +44,7 @@ The warping function is modelled using B-spline basis,
 
  where ![0\\equiv w\_{i,1} \\leq \\cdots \\leq w\_{i,K\_h} \\equiv=1](https://latex.codecogs.com/png.latex?0%5Cequiv%20w_%7Bi%2C1%7D%20%5Cleq%20%5Ccdots%20%5Cleq%20w_%7Bi%2CK_h%7D%20%5Cequiv%3D1 "0\equiv w_{i,1} \leq \cdots \leq w_{i,K_h} \equiv=1"). The first difference of the random coefficients, ![(w\_{i,2}, w\_{i,3}-w\_{i,2}, \\ldots, 1-w\_{i,K\_h-1}),](https://latex.codecogs.com/png.latex?%28w_%7Bi%2C2%7D%2C%20w_%7Bi%2C3%7D-w_%7Bi%2C2%7D%2C%20%5Cldots%2C%201-w_%7Bi%2CK_h-1%7D%29%2C "(w_{i,2}, w_{i,3}-w_{i,2}, \ldots, 1-w_{i,K_h-1}),") follows a Dirichlet distribution whose mean is fixed such that ![E(h\_i(t))=t](https://latex.codecogs.com/png.latex?E%28h_i%28t%29%29%3Dt "E(h_i(t))=t").
 
-The order and knot locations of the spline are specified via the options `h_order` and `h_knots` in `control_saem()`.
+The order and knot locations of the spline can be specified via the options `h_order` and `h_knots` in `control_saem()`, which is also used to construct a list of control arguments for the MCMC and SAEM algorithms.
 
 Example 1: Curve registration
 =============================
@@ -125,16 +119,16 @@ clust_out <- fsim_unimodal(
     ## Entering SAEM loop...
     ## 0.0%...5.0%...Initialize clustering with user inputs...
     ## cluster_size
-    ##    38.0000
-    ##    64.0000
-    ##    59.0000
-    ##    39.0000
+    ##    47.0000
+    ##    49.0000
+    ##    54.0000
+    ##    50.0000
     ## 
     ## p_clusters
-    ##    0.1900
-    ##    0.3200
-    ##    0.2950
-    ##    0.1950
+    ##    0.2350
+    ##    0.2450
+    ##    0.2700
+    ##    0.2500
     ## 
     ## 10.0%...15.0%...20.0%...25.0%...30.0%...35.0%...40.0%...45.0%...50.0%...55.0%...60.0%...65.0%...70.0%...75.0%...80.0%...85.0%...90.0%...95.0%...(Done)
 
@@ -163,16 +157,16 @@ flex_clust_out <- fsim_mixed_warped_curves(
     ## Entering SAEM loop...
     ## 0.0%...5.0%...Initialize clustering with user inputs...
     ## cluster_size
-    ##    46.0000
-    ##    63.0000
+    ##    52.0000
+    ##    58.0000
     ##    44.0000
-    ##    47.0000
+    ##    46.0000
     ## 
     ## p_clusters
-    ##    0.2300
-    ##    0.3150
+    ##    0.2600
+    ##    0.2900
     ##    0.2200
-    ##    0.2350
+    ##    0.2300
     ## 
     ## 10.0%...15.0%...20.0%...25.0%...30.0%...35.0%...40.0%...45.0%...50.0%...55.0%...60.0%...65.0%...70.0%...75.0%...80.0%...85.0%...90.0%...95.0%...(Done)
 
