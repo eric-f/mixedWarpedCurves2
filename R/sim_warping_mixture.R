@@ -2,23 +2,50 @@
 require(fda)
 require(gtools)
 
-#' Fixed base shape based on symmetric beta-density
+#' Make base shape by standarding a symmetric beta-density
 #'
+#' Internal function to be called by sim_warping_mixture()
+#' @param x numeric vector between 0 and 1 where the function is evaluated
+#' @param a non-negative parameters of the Beta distribution
+#' @import stats
 base_shape <- function(x, a=2){
   -dbeta(x, a, a) / dbeta(0.5, a, a)
 }
 
-#' Fixed base shape based on beta-density
+#' Make base shape from a beta-density
 #'
+#' Internal function to be called by sim_warping_mixture()
+#' @param x numeric vector between 0 and 1 where the function is evaluated
+#' @param a non-negative parameters of the Beta distribution
+#' @param b non-negative parameters of the Beta distribution
+#' @import stats
 beta_shape <- function(x, a=2, b=3){
   -dbeta(x, a, b) / dbeta((a-1)/(a+b-2), a, b)
 }
 
 
-#' Simulate warping mixture
+#' Simulate curves with mixture of warping
+#'
+#' This function simulate observations from the mixture of warping model
+#' with a unimodal base shape. The base shape is negative of a standardized beta density
+#' function with minimum equals to -1
+#' @param n integer, number of curves
+#' @param p numeric vector, mixture proportions
+#' @param kappa G x K nuermic matrix, means of the Dirichlet distribution
+#' for the G mixture component, stacked in rows
+#' @param tau numeric, common concentration parameter of the Dirichlet components
+#' @param ni numeric, number of points per curve
+#' @param mu_sh numeric, mean of amplitude shifting effect
+#' @param mu_sc numeric, mean of amplitude scaling effect
+#' @param sd_sh numeric, standard deviation of amplitude shifting
+#' @param sd_sc numeric, standard deviation of amplitude scaling
+#' @param sd_err numeric, standard deviation of the residual term
+#' @param shape_a numeric, non-negative parameters of the Beta distribution
+#' @param shape_b numeric, non-negative parameters of the Beta distribution
+#' @import stats splines gtools
 #' @examples
-#' require(gtools)
 #' require(ggplot2)
+#' require(fda)
 #' kappa0 <- c(1,2,2,1)
 #' kappa0 <- kappa0 / sum(kappa0)
 #' kappa1 <- c(0,4,4,0)

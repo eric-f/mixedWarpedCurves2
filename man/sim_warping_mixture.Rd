@@ -2,18 +2,46 @@
 % Please edit documentation in R/sim_warping_mixture.R
 \name{sim_warping_mixture}
 \alias{sim_warping_mixture}
-\title{Simulate warping mixture}
+\title{Simulate curves with mixture of warping}
 \usage{
 sim_warping_mixture(n, p, kappa, tau = 1, ni = 1001, mu_sh = -15,
   mu_sc = 500, sd_sh = 5, sd_sc = 50, sd_err = 5, shape_a = 2,
   shape_b = 2)
 }
+\arguments{
+\item{n}{integer, number of curves}
+
+\item{p}{numeric vector, mixture proportions}
+
+\item{kappa}{G x K nuermic matrix, means of the Dirichlet distribution
+for the G mixture component, stacked in rows}
+
+\item{tau}{numeric, common concentration parameter of the Dirichlet components}
+
+\item{ni}{numeric, number of points per curve}
+
+\item{mu_sh}{numeric, mean of amplitude shifting effect}
+
+\item{mu_sc}{numeric, mean of amplitude scaling effect}
+
+\item{sd_sh}{numeric, standard deviation of amplitude shifting}
+
+\item{sd_sc}{numeric, standard deviation of amplitude scaling}
+
+\item{sd_err}{numeric, standard deviation of the residual term}
+
+\item{shape_a}{numeric, non-negative parameters of the Beta distribution}
+
+\item{shape_b}{numeric, non-negative parameters of the Beta distribution}
+}
 \description{
-Simulate warping mixture
+This function simulate observations from the mixture of warping model
+with a unimodal base shape. The base shape is negative of a standardized beta density
+function with minimum equals to -1
 }
 \examples{
-require(gtools)
 require(ggplot2)
+require(fda)
 kappa0 <- c(1,2,2,1)
 kappa0 <- kappa0 / sum(kappa0)
 kappa1 <- c(0,4,4,0)

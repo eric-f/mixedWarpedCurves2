@@ -10,7 +10,6 @@
 #' @param saem_control a list of values to control the MCMC and stochastic approximation
 #' @importFrom Rcpp evalCpp
 #' @useDynLib mixedWarpedCurves2
-#' @export
 fsim_mixture_a_model <- function(y,
                                  obs_time,
                                  curve_id,

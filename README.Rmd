@@ -49,26 +49,28 @@ The order and knot locations of the spline are specified via the options `h_orde
 
 # Example 1: Curve registration
 ```{r example-1-data, fig.width=4, fig.show='hold'}
-set.seed(0)
-kappa0 <- matrix(c(1,2,3,2,1) / 9, nrow=1)
-## Hack to sim sinusoidal curve
-sim_data <- 
-  sim_warping_mixture(n = 50, ni = 101, p = 1, 
-                      kappa = kappa0, tau = 10, 
-                      sd_sh = 50, sd_sc = 100, 
-                      sd_err = 10,
-                      shape_a = 2, shape_b = 2)
-sim_data$y1 = sin(sim_data$warped_x*2*pi) + sin(sim_data$warped_x*4*pi)
-sim_data$y2 = sim_data$sh + sim_data$sc * sim_data$y1
-sim_data$resid = sim_data$y - (sim_data$sh + sim_data$sc * sim_data$y0)
-sim_data$y = sim_data$y2 + sim_data$resid
+# set.seed(0)
+# kappa0 <- matrix(c(1,2,3,2,1) / 9, nrow=1)
+# ## Hack to sim sinusoidal curve
+# data_ex1 <-
+#   sim_warping_mixture(n = 50, ni = 101, p = 1,
+#                       kappa = kappa0, tau = 10,
+#                       sd_sh = 50, sd_sc = 100,
+#                       sd_err = 10,
+#                       shape_a = 2, shape_b = 2)
+# data_ex1$y1 = sin(data_ex1$warped_x*2*pi) + sin(data_ex1$warped_x*4*pi)
+# data_ex1$y2 = data_ex1$sh + data_ex1$sc * data_ex1$y1
+# data_ex1$resid = data_ex1$y - (data_ex1$sh + data_ex1$sc * data_ex1$y0)
+# data_ex1$y = data_ex1$y2 + data_ex1$resid
+# save(data_ex1, file = "data/example-data-1.rda")
+load("data/example-data-1.rda")
 
 
-ggplot(sim_data) + 
+ggplot(data_ex1) + 
   geom_line(aes(x=x, y=y, col=id), show.legend = F) + 
   labs(x="Time, t", y=expression(paste("Observed curve, ", y[i](t))))
 
-ggplot(sim_data) + 
+ggplot(data_ex1) + 
   geom_line(aes(x=x, y=warped_x, col=id), show.legend = F) + 
   labs(x="Time, t", 
        y=expression(paste("Warping function, ", h[i](t))))
@@ -77,10 +79,11 @@ ggplot(sim_data) +
 ## Estimate model parameters and warping functions by SAEM
 ```{r example-1-saem, echo=TRUE, cache=TRUE}
 out <- fsim_mixed_warped_curves(
-  y = sim_data$y,
-  obs_time = sim_data$x,
-  curve_id = sim_data$id,
+  y = data_ex1$y,
+  obs_time = data_ex1$x,
+  curve_id = data_ex1$id,
   saem_control = control_saem(
+    seed = 0,
     n_saem_iter = 1000,
     n_saem_burn = 100,
     n_mcmc_burn = 5,
@@ -131,36 +134,37 @@ qplot(x=seq(along=sigma2_track),
 
 # Example 2: Clustering on phase variation
 ```{r example-2-data, fig.width=4, fig.show='hold'}
-set.seed(0)
-## Simulate curves with a mixture of warping
-kappa1 <- c(1,5,5,1)
-kappa1 <- kappa1 / sum(kappa1)
-kappa2 <- c(5,1,1,5)
-kappa2 <- kappa2 / sum(kappa2)
-kappa3 <- c(0.5,0.5,2.5,2.5)
-kappa3 <- kappa3 / sum(kappa3)
-kappa4 <- c(2.5,2.5,0.5,0.5)
-kappa4 <- kappa4 / sum(kappa4)
-mix_data <- 
-  sim_warping_mixture(n = 200, ni = 41, p = rep(1/4, 4), 
-                      kappa = rbind(kappa1,
-                                    kappa2,
-                                    kappa3,
-                                    kappa4), 
-                      tau = 20, 
-                      sd_sh = 100, sd_sc = 100, 
-                      sd_err = 30,
-                      shape_a = 2, shape_b = 2)
+# set.seed(0)
+# # Simulate curves with a mixture of warping
+# kappa1 <- c(1,5,5,1)
+# kappa1 <- kappa1 / sum(kappa1)
+# kappa2 <- c(5,1,1,5)
+# kappa2 <- kappa2 / sum(kappa2)
+# kappa3 <- c(0.5,0.5,2.5,2.5)
+# kappa3 <- kappa3 / sum(kappa3)
+# kappa4 <- c(2.5,2.5,0.5,0.5)
+# kappa4 <- kappa4 / sum(kappa4)
+# data_ex2 <-
+#   sim_warping_mixture(n = 200, ni = 41, p = rep(1/4, 4),
+#                       kappa = rbind(kappa1,
+#                                     kappa2,
+#                                     kappa3,
+#                                     kappa4),
+#                       tau = 20,
+#                       sd_sh = 100, sd_sc = 100,
+#                       sd_err = 30,
+#                       shape_a = 2, shape_b = 2)
+# save(data_ex2, file = "data/example-data-2.rda")
+load("data/example-data-2.rda")
 
-
-ggplot(mix_data) + 
+ggplot(data_ex2) + 
   geom_line(aes(x=x, y=y, group=id, col=clust), 
             show.legend = F, size=0.3) + 
   labs(x="Time, t", 
        y=expression(paste("Observed curve, ", y[i](t))),
        color="Cluster")
 
-ggplot(mix_data) + 
+ggplot(data_ex2) + 
   geom_line(aes(x=x, y=warped_x, group=id, col=clust), 
             show.legend = T, size=0.3) + 
   labs(x="Time, t", 
@@ -172,9 +176,9 @@ ggplot(mix_data) +
 ### Known unimodal shape
 ```{r example-2-saem-unimodal, echo=TRUE, message=FALSE, cache=TRUE}
 clust_out <- fsim_unimodal(
-  y = mix_data$y,
-  obs_time = mix_data$x,
-  curve_id = mix_data$id,
+  y = data_ex2$y,
+  obs_time = data_ex2$x,
+  curve_id = data_ex2$id,
   n_clust = 4,
   saem_control = control_saem(
     n_saem_iter = 2000,
@@ -196,16 +200,16 @@ clust_out_df <- ldply(clust_out$curves, function(crv){
     pred_clust = as.character(which.max(crv$sapprox_cluster_membership))
   )
 }) %>%
-  dplyr::inner_join(., select(mix_data, id, x, clust, warped_x), by=c("id", "x")) %>%
+  dplyr::inner_join(., select(data_ex2, id, x, clust, warped_x), by=c("id", "x")) %>%
   mutate(clust = letters[clust])
 ```
 
 ### Unknown base shape
 ```{r example-2-saem-flexShape, echo=TRUE, message=FALSE, cache=TRUE}
 flex_clust_out <- fsim_mixed_warped_curves(
-  y = mix_data$y,
-  obs_time = mix_data$x,
-  curve_id = mix_data$id,
+  y = data_ex2$y,
+  obs_time = data_ex2$x,
+  curve_id = data_ex2$id,
   n_clust = 4,
   saem_control = control_saem(
     n_saem_iter = 2000,
@@ -227,12 +231,12 @@ flex_clust_out_df <- ldply(flex_clust_out$curves, function(crv){
     pred_clust = as.character(which.max(crv$sapprox_cluster_membership))
   )
 }) %>%
-  dplyr::inner_join(., select(mix_data, id, x, clust, warped_x), by=c("id", "x")) %>%
+  dplyr::inner_join(., select(data_ex2, id, x, clust, warped_x), by=c("id", "x")) %>%
   mutate(clust = letters[clust])
 ```
 
 ```{r example-2-tab, include=FALSE}
-true_clust <- mix_data[mix_data$x==0, "clust"]
+true_clust <- data_ex2[data_ex2$x==0, "clust"]
 pred_clust <- sapply(clust_out$curves,
                   function(crv){
                     which.max(crv$sapprox_cluster_membership)

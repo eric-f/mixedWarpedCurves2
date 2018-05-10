@@ -8,9 +8,9 @@
 #' @param obs_time a vector of the observation times
 #' @param curve_id a vector of curve IDs
 #' @param saem_control a list of values to control the MCMC and stochastic approximation
+#' @importFrom splines splineDesign
 #' @importFrom Rcpp evalCpp
 #' @useDynLib mixedWarpedCurves2
-#' @export
 fsim_mixed_shape <- function(y,
                              obs_time,
                              curve_id,

@@ -2,10 +2,17 @@
 % Please edit documentation in R/sim_warping_mixture.R
 \name{beta_shape}
 \alias{beta_shape}
-\title{Fixed base shape based on beta-density}
+\title{Make base shape from a beta-density}
 \usage{
 beta_shape(x, a = 2, b = 3)
 }
+\arguments{
+\item{x}{numeric vector between 0 and 1 where the function is evaluated}
+
+\item{a}{non-negative parameters of the Beta distribution}
+
+\item{b}{non-negative parameters of the Beta distribution}
+}
 \description{
-Fixed base shape based on beta-density
+Internal function to be called by sim_warping_mixture()
 }

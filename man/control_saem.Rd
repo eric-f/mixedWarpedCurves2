@@ -43,6 +43,10 @@ control_saem(n_saem_iter = 1, n_saem_burn = 1, n_mcmc_burn = 1,
 \item{f_n_knots}{Number of equally spaced knots, from 0 to 1, to use if f_knots is not specified}
 
 \item{h_n_knots}{Number of equally spaced knots, from 0 to 1, to use if h_knots is not specified}
+
+\item{ind_amp}{TRUE if the amplitude shifting and scaling effects are assumed independent, FALSE otherwise}
+
+\item{seed}{Random seed for MCMC sampler in C++}
 }
 \description{
 This function help specify the control parameters for the stochastic approximation.
