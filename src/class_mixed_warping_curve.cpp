@@ -174,7 +174,8 @@ void Mixed_Warping_Curve::propose_new_w(int cluster_idx){
   // update proposed_w
   tmp_dw = common_pars->chol_centering_mat * proposed_z;
   tmp_dw -= mean(tmp_dw);
-  tmp_dw.transform(exp);
+  tmp_dw = arma::exp(tmp_dw);
+  // tmp_dw.transform(exp);
   proposed_dw = tmp_dw / arma::sum(tmp_dw);
   proposed_w(0) = 0;
   proposed_w(arma::span(1, dim_w - 1)) = arma::cumsum(proposed_dw);

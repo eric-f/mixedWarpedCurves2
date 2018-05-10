@@ -273,7 +273,8 @@ void Unimodal_Curve_Lite::approx_logLik_full_mcmc(){
       arma::chol(common_pars->identity_cor_mat * common_pars->prop_sigma).t() * arma::randn(dim_z);
     proposed_dw = common_pars->chol_centering_mat * proposed_z;
     proposed_dw -= mean(proposed_dw);
-    proposed_dw.transform(exp);
+    proposed_dw = arma::exp(proposed_dw);
+    // proposed_dw.transform(exp);
     proposed_dw = proposed_dw / arma::sum(proposed_dw);
     proposed_w(0) = 0;
     proposed_w(arma::span(1, dim_w - 1)) = arma::cumsum(proposed_dw);
