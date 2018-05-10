@@ -1,0 +1,14 @@
+# set by configure
+GSL_CFLAGS = -I/usr/local/Cellar/gsl/2.2.1/include
+GSL_LIBS   = -L/usr/local/Cellar/gsl/2.2.1/lib -lgsl -lgslcblas
+
+# combine with standard arguments for R
+ifeq ($(shell $(CXX1X) -fopenmp -E -xc++ - && echo 'true'), true)
+  PKG_CPPFLAGS = $(GSL_CFLAGS)
+  PKG_LIBS = $(SHLIB_OPENMP_CXXFLAGS) $(GSL_LIBS) $(LAPACK_LIBS) $(BLAS_LIBS)
+  PKG_CXXFLAGS=-fopenmp -std=c++0x
+else
+  PKG_CPPFLAGS = $(GSL_CFLAGS)
+  PKG_LIBS = $(GSL_LIBS) $(LAPACK_LIBS) $(BLAS_LIBS)
+endif
+
