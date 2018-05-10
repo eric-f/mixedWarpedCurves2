@@ -7,6 +7,8 @@ R package: mixedWarpedCurves2
 -   [Example 2: Clustering on phase variation](#example-2-clustering-on-phase-variation)
 -   [Reference](#reference)
 
+[![Travis-CI Build Status](https://travis-ci.org/eric-f/mixedWarpedCurves2.svg?branch=master)](https://travis-ci.org/eric-f/mixedWarpedCurves2)
+
 Installation
 ============
 
@@ -52,10 +54,11 @@ Estimate model parameters and warping functions by SAEM
 
 ``` r
 out <- fsim_mixed_warped_curves(
-  y = sim_data$y,
-  obs_time = sim_data$x,
-  curve_id = sim_data$id,
+  y = data_ex1$y,
+  obs_time = data_ex1$x,
+  curve_id = data_ex1$id,
   saem_control = control_saem(
+    seed = 0,
     n_saem_iter = 1000,
     n_saem_burn = 100,
     n_mcmc_burn = 5,
@@ -98,9 +101,9 @@ Fit mixture of warping function by SAEM
 
 ``` r
 clust_out <- fsim_unimodal(
-  y = mix_data$y,
-  obs_time = mix_data$x,
-  curve_id = mix_data$id,
+  y = data_ex2$y,
+  obs_time = data_ex2$x,
+  curve_id = data_ex2$id,
   n_clust = 4,
   saem_control = control_saem(
     n_saem_iter = 2000,
@@ -114,16 +117,16 @@ clust_out <- fsim_unimodal(
     ## Entering SAEM loop...
     ## 0.0%...5.0%...Initialize clustering with user inputs...
     ## cluster_size
+    ##    60.0000
+    ##    46.0000
+    ##    51.0000
     ##    43.0000
-    ##    53.0000
-    ##    48.0000
-    ##    56.0000
     ## 
     ## p_clusters
+    ##    0.3000
+    ##    0.2300
+    ##    0.2550
     ##    0.2150
-    ##    0.2650
-    ##    0.2400
-    ##    0.2800
     ## 
     ## 10.0%...15.0%...20.0%...25.0%...30.0%...35.0%...40.0%...45.0%...50.0%...55.0%...60.0%...65.0%...70.0%...75.0%...80.0%...85.0%...90.0%...95.0%...(Done)
 
@@ -131,9 +134,9 @@ clust_out <- fsim_unimodal(
 
 ``` r
 flex_clust_out <- fsim_mixed_warped_curves(
-  y = mix_data$y,
-  obs_time = mix_data$x,
-  curve_id = mix_data$id,
+  y = data_ex2$y,
+  obs_time = data_ex2$x,
+  curve_id = data_ex2$id,
   n_clust = 4,
   saem_control = control_saem(
     n_saem_iter = 2000,
@@ -152,16 +155,16 @@ flex_clust_out <- fsim_mixed_warped_curves(
     ## Entering SAEM loop...
     ## 0.0%...5.0%...Initialize clustering with user inputs...
     ## cluster_size
-    ##    59.0000
-    ##    50.0000
-    ##    52.0000
-    ##    39.0000
+    ##    58.0000
+    ##    48.0000
+    ##    41.0000
+    ##    53.0000
     ## 
     ## p_clusters
-    ##    0.2950
-    ##    0.2500
-    ##    0.2600
-    ##    0.1950
+    ##    0.2900
+    ##    0.2400
+    ##    0.2050
+    ##    0.2650
     ## 
     ## 10.0%...15.0%...20.0%...25.0%...30.0%...35.0%...40.0%...45.0%...50.0%...55.0%...60.0%...65.0%...70.0%...75.0%...80.0%...85.0%...90.0%...95.0%...(Done)
 

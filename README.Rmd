@@ -7,6 +7,8 @@ output:
     pandoc_args: --webtex
 ---
 
+[![Travis-CI Build Status](https://travis-ci.org/eric-f/mixedWarpedCurves2.svg?branch=master)](https://travis-ci.org/eric-f/mixedWarpedCurves2)
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = F)
 library(mixedWarpedCurves2)
