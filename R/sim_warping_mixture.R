@@ -1,7 +1,3 @@
-# rm(list=ls())
-require(fda)
-require(gtools)
-
 #' Make base shape by standarding a symmetric beta-density
 #'
 #' Internal function to be called by sim_warping_mixture()

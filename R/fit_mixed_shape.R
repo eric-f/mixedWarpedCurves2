@@ -1,5 +1,3 @@
-devtools::use_package("gtools")
-
 #' Fit the mixture model of Brillinger and Stewart (1997)
 #'
 #' This function fits the mixture of shape model using the EM algorithm
@@ -20,7 +18,6 @@ fit_mixed_shape <- function(y, x=NULL, nCat=9, nIter=100, plot.est=FALSE){
   mlik_track <- rep(0, nIter)
   aux_track <- numeric(nIter)
   # Initialize p_jk
-  # p_jk <- rdirichlet(nid, alpha = rep(1,nCat))
   p_jk <- matrix(runif(nCat*nid), nid, nCat)
   p_jk <- p_jk / rowSums(p_jk)
   for(i in 1:nIter){
