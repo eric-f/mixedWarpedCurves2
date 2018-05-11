@@ -1,5 +1,5 @@
 PKG_CPPFLAGS= -I../windows/gsl-2.4/include -I../inst/include
-PKG_LIBS= -L../windows/gsl-2.4/lib${R_ARCH} -lgsl -lgslcblas
+PKG_LIBS= -L../windows/gsl-2.4/lib${R_ARCH} -lgsl -lgslcblas $(FLIBS) $(LAPACK_LIBS) $(BLAS_LIBS)
 
 all: clean winlibs
 
