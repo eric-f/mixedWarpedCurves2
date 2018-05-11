@@ -18,3 +18,4 @@
 ^\.Rproj\.user/$
 ^\.travis\.yml$
 ^appveyor\.yml$
+^windows$
