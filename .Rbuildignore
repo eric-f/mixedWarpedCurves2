@@ -17,3 +17,4 @@
 ^test/\.DS_Store$
 ^\.Rproj\.user/$
 ^\.travis\.yml$
+^appveyor\.yml$
