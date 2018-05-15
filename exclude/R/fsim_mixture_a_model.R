@@ -13,6 +13,7 @@
 #' @param trace if TRUE, tracing information of the estimated parameters are printed
 #' @importFrom Rcpp evalCpp
 #' @useDynLib mixedWarpedCurves2
+#' @noRd
 fsim_mixture_a_model <- function(y,
                                  obs_time,
                                  curve_id,

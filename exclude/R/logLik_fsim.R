@@ -5,6 +5,7 @@
 #' @param method method for computing the log-likelihood
 #' @param n_sim number of Monte Carlo sample
 #' @param seed seed for random number generator
+#' @noRd
 logLik_fsim <- function(saemObj, method=c("joint_mc", "joint_is", "marginal_is", "mcmc"), n_sim=10, seed=0){
   # kappa (<-> identity)
   tmp_y <- tmp_x <- seq(0, 1, length=1000)
