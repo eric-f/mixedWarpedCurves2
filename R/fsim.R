@@ -50,6 +50,7 @@
 #' @references Fu, E. and Heckman, N. (2017). Model-based curve registration via stochastic approximation EM algorithm. https://arxiv.org/abs/1712.07265
 #' @useDynLib mixedWarpedCurves2
 #' @importFrom splines splineDesign
+#' @seealso See https://github.com/eric-f/mixedWarpedCurves2 for examples
 #' @export
 fsim <- function(y,
                  obs_time,

@@ -12,7 +12,7 @@
 #' @param obs_time vector of the observation times
 #' @param curve_id vector of curve IDs
 #' @param init_clust vector of inital clutering label with length equals to the number of curves
-#' @param n_clust integer, number of clusters
+#' @param n_clust integer, number of clusters (set to 1 if not clustering)
 #' @param saem_control a list of values to control the MCMC and stochastic approximation. See control_saem().
 #' @param trace if TRUE, tracing information of the estimated parameters are printed
 #' @return \describe{
@@ -48,6 +48,7 @@
 #' @references Fu, E. and Heckman, N. (2017). Model-based curve registration via stochastic approximation EM algorithm. https://arxiv.org/abs/1712.07265
 #' @importFrom splines splineDesign
 #' @useDynLib mixedWarpedCurves2
+#' @seealso See https://github.com/eric-f/mixedWarpedCurves2 for examples
 #' @export
 fsim_unimodal <- function(y,
                           obs_time,

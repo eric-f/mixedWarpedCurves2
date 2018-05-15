@@ -16,7 +16,7 @@ fsim_unimodal(y, obs_time, curve_id, init_clust = NULL, n_clust = 1,
 
 \item{init_clust}{vector of inital clutering label with length equals to the number of curves}
 
-\item{n_clust}{integer, number of clusters}
+\item{n_clust}{integer, number of clusters (set to 1 if not clustering)}
 
 \item{saem_control}{a list of values to control the MCMC and stochastic approximation. See control_saem().}
 
@@ -66,4 +66,7 @@ registration.
 }
 \references{
 Fu, E. and Heckman, N. (2017). Model-based curve registration via stochastic approximation EM algorithm. https://arxiv.org/abs/1712.07265
+}
+\seealso{
+See https://github.com/eric-f/mixedWarpedCurves2 for examples
 }

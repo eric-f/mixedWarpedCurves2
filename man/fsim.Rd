@@ -68,3 +68,6 @@ Dirichlet distributions.
 \references{
 Fu, E. and Heckman, N. (2017). Model-based curve registration via stochastic approximation EM algorithm. https://arxiv.org/abs/1712.07265
 }
+\seealso{
+See https://github.com/eric-f/mixedWarpedCurves2 for examples
+}
