@@ -101,7 +101,7 @@ ggplot(data_ex1) +
 
 ![](man/figures/README-example-1-data-1.png)![](man/figures/README-example-1-data-2.png)![](man/figures/README-example-1-data-3.png)![](man/figures/README-example-1-data-4.png) The figures above show the base shape (top left), the observe curves (top right), the amplitude functions, ![f\_i](https://latex.codecogs.com/png.latex?f_i "f_i"), (bottom left) and the warping functions, ![h\_i](https://latex.codecogs.com/png.latex?h_i "h_i"), (bottom right).
 
-Calling fsim() to fit the model by maximum likelihood via a stochastic approximation expectation-maximization (SAEM) algorithm:
+Calling `fsim()` to fit the model by maximum likelihood via a stochastic approximation expectation-maximization (SAEM) algorithm:
 
 ``` r
 out <- fsim(
@@ -169,7 +169,7 @@ ggplot(out_df) +
 
 ![](man/figures/README-example-1-plots-1.png)![](man/figures/README-example-1-plots-2.png)
 
-The sequences of estimated parameters are returned in the pars\_track component. The figure below shows the estimated error variances as a simple convergence diagnostics:
+The sequences of estimated parameters are returned in the `pars_track` component. The figure below shows the estimated error variances as a simple convergence diagnostics:
 
 ``` r
 sigma2_track <- out$pars_track$sigma2_track
