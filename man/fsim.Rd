@@ -8,17 +8,54 @@ fsim(y, obs_time, curve_id, n_clust = 1, saem_control = control_saem(),
   trace = FALSE)
 }
 \arguments{
-\item{y}{a vector of observed curves}
+\item{y}{vector of observed curves at times obs_time}
 
-\item{obs_time}{a vector of the observation times}
+\item{obs_time}{vector of the observation times}
 
-\item{curve_id}{a vector of curve IDs}
+\item{curve_id}{vector of curve IDs}
 
-\item{n_clust}{number of clusters. Deprecated, please use fsim_mixed_warped_curves() for simultaneous registration and clustering}
+\item{n_clust}{number of clusters. \emph{(Deprecated!! Please use fsim_mixed_warped_curves() for simultaneous registration and clustering)}}
 
-\item{saem_control}{a list of values to control the MCMC and stochastic approximation}
+\item{saem_control}{list of values to control MCMC and stochastic approximation}
 
 \item{trace}{if TRUE, tracing information of the estimated parameters are printed}
+}
+\value{
+\describe{
+  \item{pars}{List of estimated or fixed model parameters
+    \describe{
+      \item{mu0}{Fixed mean vector for the Gaussian amplitude effects}
+      \item{kappa0}{Fixed Dirichlet mean so that the mean warping function is the identity function}
+      \item{alpha}{Estimated B-spline basis coefficient for the common base shape}
+      \item{sigma2}{Estimated variance of the error term}
+      \item{big_sigma}{Estimated variance-covariance matrix of the Gaussian amplitude effect}
+      \item{p_clusters}{Estimated mixing proportion. Identical to 1 in the no clustering case}
+      \item{tau_clusters}{Overall concentration of the Dirichlet random effect distribution}
+      \item{kappa_clusters}{Estimated means of the Dirichlet components. Identical to kappa0 in the no clustering case}
+    }
+  }
+  \item{curves}{List of curves with stochastic approximation to sufficient statistics, each curves has the following components
+    \describe{
+      \item{curve_id}{Curve ID. (Caution: this might be different from the inputted curve id, if the original id's is not a sequence from 1 to n.}
+      \item{x}{Inputted observation time}
+      \item{y}{Inputted observed curves}
+      \item{warped_x}{Estimated warped time}
+      \item{fitted_y}{Fitted curve}
+      \item{sapprox_a}{Stochastic approximation to the conditional expectation of amplitude effects given data}
+      \item{sapprox_w}{Stochastic approximation to the conditional expectation of warping coefficients given data}
+      \item{sapprox_warped_f_basis_mat}{Stochastic approximation to sufficient statistics for SAEM}
+      \item{sapprox_aug_warped_f_basis_m}{Stochastic approximation to sufficient statistics for SAEM}
+      \item{sapprox_hat_mat}{Stochastic approximation to sufficient statistics for SAEM}
+      \item{sapprox_sigma_a}{Stochastic approximation to sufficient statistics for SAEM}
+      \item{sapprox_log_dw}{Stochastic approximation to sufficient statistics for SAEM}
+      \item{sapprox_cluster_membership}{(Deprecated!!) Stochastic approximation to predictive probabilities of cluster membership}
+    }
+  }
+  \item{aux}{List of auxiliary information and intermediate variables for MCMC-SAEM}
+  \item{pars_track}{Sequence of estimated parameters for convergence diagnostics}
+  \item{se_info}{(Experimental!!) Stochastic approximation to Fishers information matrix}
+  \item{y_scaling_factor}{Maximum absolute value of the observed curve}
+}
 }
 \description{
 This function fits the model \deqn{Y_i(t) = a_{i,sh} + a_{i,sc} f \circ h_i(y)}

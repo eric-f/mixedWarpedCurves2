@@ -11,19 +11,11 @@ Description: Simultaneous clustering and curve registration by a mixutre of
 License: GPL-2 | GPL-3
 LazyData: TRUE
 LazyLoad: yes
-Imports:
-    Rcpp (>= 0.12.10),
-    RcppArmadillo (>= 0.7.400.2.0),
-    RcppGSL (>= 0.3.1),
-    BH (>= 1.62.0),
-    RcppProgress (>= 0.2.1),
-    gtools,
-    splines
+Imports: Rcpp (>= 0.12.10), RcppArmadillo (>= 0.7.400.2.0), RcppGSL (>=
+        0.3.1), BH (>= 1.62.0), RcppProgress (>= 0.2.1), gtools,
+        splines
 Depends:
-LinkingTo:
-    Rcpp,
-    RcppArmadillo,
-    RcppGSL,
-    BH,
-    RcppProgress
+LinkingTo: Rcpp, RcppArmadillo, RcppGSL, BH, RcppProgress
 RoxygenNote: 6.0.1
+NeedsCompilation: yes
+Packaged: 2018-05-12 03:34:39 UTC; ericfu

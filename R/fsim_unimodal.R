@@ -11,7 +11,37 @@
 #' @param n_clust integer, number of clusters
 #' @param saem_control a list of values to control the MCMC and stochastic approximation. See control_saem().
 #' @param trace if TRUE, tracing information of the estimated parameters are printed
-#' @importFrom splines splineDesign
+#' @return \describe{
+#'   \item{pars}{List of estimated or fixed model parameters
+#'     \describe{
+#'       \item{sigma2}{Estimated variance of the error term}
+#'       \item{mu_a}{Estimated means of the Gaussian amplitude effects}
+#'       \item{sigma2_a}{Estimated variance-covariance matrix of the Gaussian amplitude effect}
+#'       \item{p_clusters}{Estimated mixing proportion of the finite mixture of Dirichlet distribution for the random warping effects}
+#'       \item{kappa_clusters}{Estimated Dirichlet concentration parameters for each mixture component}
+#'     }
+#'   }
+#'   \item{curves}{List of curves with stochastic approximation to sufficient statistics, each curves has the following components
+#'     \describe{
+#'       \item{curve_id}{Curve ID. (Caution: this might be different from the inputted curve id, if the original id's is not a sequence from 1 to n.}
+#'       \item{x}{Inputted observation time}
+#'       \item{y}{Inputted observed curves}
+#'       \item{y}{Inputted or random initial cluster label}
+#'       \item{warped_x}{Estimated warped time}
+#'       \item{fitted_y}{Fitted curve}
+#'       \item{sapprox_residual_sum_of_squares}{Stochastic approximation to residual sum of squares}
+#'       \item{sapprox_a}{Stochastic approximation to the conditional expectation of amplitude effects given data}
+#'       \item{sapprox_w}{Stochastic approximation to the conditional expectation of warping coefficients given data}
+#'       \item{sapprox_log_dw}{Stochastic approximation to sufficient statistics for SAEM}
+#'       \item{sapprox_cluster_membership}{Stochastic approximation to predictive probabilities of cluster membership}
+#'     }
+#'   }
+#'   \item{aux}{List of auxiliary information and intermediate variables for MCMC-SAEM}
+#'   \item{pars_track}{Sequence of estimated parameters for convergence diagnostics}
+#'   \item{se_info}{(Experimental!!) Stochastic approximation to Fishers information matrix}
+#'   \item{y_scaling_factor}{Maximum absolute value of the observed curve}
+#' }
+#' #' @importFrom splines splineDesign
 #' @useDynLib mixedWarpedCurves2
 #' @export
 fsim_unimodal <- function(y,
