@@ -7,11 +7,11 @@ output:
     pandoc_args: --webtex
 ---
 
-[![Travis-CI Build Status](https://travis-ci.org/eric-f/mixedWarpedCurves2.svg?branch=master)](https://travis-ci.org/eric-f/mixedWarpedCurves2)
+[![Travis-CI Build Status](https://travis-ci.org/eric-f/mixedWarpedCurves2.svg?branch=master)](https://travis-ci.org/eric-f/mixedWarpedCurves2) [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/eric-f/mixedWarpedCurves2?branch=master&svg=true)](https://ci.appveyor.com/project/eric-f/mixedWarpedCurves2)
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
-  echo = F, 
+  echo = TRUE, 
   fig.path = "man/figures/README-")
 library(mixedWarpedCurves2)
 library(gtools)
@@ -20,81 +20,102 @@ library(plyr)
 library(dplyr)
 ```
 
-# Installation
+# Dependencies
 
-The package requires GNU GSL library. On OSX, you can install the library via [Homebrew](https://brew.sh)
+- GNU Scientific Library (GSL)
+- R packages:
+    - splines
+    - gtools
+    - Rcpp
+    - RcppArmadillo
+    - RcppGSL
+    - RcppProgress
+    - BH
+
+On Windows, the R package will be built using the GSL at https://github.com/rwinlib/gsl. On other platforms, you will need to have the library installed manually before this R package can be compiled.
+
+On OSX, you can install GSL via [Homebrew](https://brew.sh). If you do not already have Homebrew, go to https://brew.sh for installation instructions. After that, run the following command in your terminal
 ```
 brew install gsl
 ```
 
-On Debian or Ubuntu, try
+On Debian or Ubuntu, install from terminal by running
 ```
 sudo apt-get install libgsl0-dev
 ```
 
-Then, to install the package in R
+# Installation
+
+Once all the dependencies have been installed, run the following lines in R to install the latest version of this package:
 ```
 library(devtools)
 devtools::install_github('eric-f/mixedWarpedCurves2')
 ```
 
-# Model
-We model the functional data as noisy observations of latent curves, $y_i$'s, at time $t_{ij}$, as $y_{ij} = y_i(t) + \epsilon_{ij}.$
+# Overview
 
-The latent curve, $y_i(t) = f_i \circ h_i(t),$ is composed of two functions, $f_i$ and $h_i$, representing amplitude and phase variations. Specifically, the amplitude function is rank-1: $f_i = a_{i,sh} + a_{i,sc} f(t)$, with a common base shape $f$ whereas the warping function $h_i:[0, 1]\to[0, 1]$ is continuous and strictly increasing.
+The main functions in this package to fit the warped curves model via Stochastic approximation EM algorithms are `fsim()` and `fsim_unimodal()`. Control arguments for the model and algorithm can be specificy via `control_saem()`.
 
-## Amplitude function
+# Warped curves model
 
-The base shape, $f$ is either a known function or modelled as a spline that is to be estimated. The amplitude random effect, $(a_{i,sh}, a_{i,sc})$, is Gaussian with mean $(\mu_{sh}, \mu_{sc})$ and variance-covariance matrix $\Sigma$.
+We model the functional data as noisy observations of latent curves, $y_i$'s, at time $t_{ij}$, as $y_{ij} = y_i(t_{ij}) + \epsilon_{ij}$.
 
-`fsim_unimodal()` fit the fixed base shape version where $f(t) = -4t(1-t)$.
+The latent curve, $y_i(t) = f_i \circ h_i(t),$ is composed of two functions, $f_i$ and $h_i$, representing amplitude and phase variations respectively. Specifically, the amplitude function has the form: $f_i = a_{i,sh} + a_{i,sc} f(t)$, where $f$ is a common base shape whereas the warping function is continuous, strictly increasing and satisfies $h_i(0)\equiv 0$ and $h_i(1)\equiv 1$.
 
-`fsim_mixed_warped_curves()` fit the unknown base shape version of the model. The base shape is modelled using B-spline basis. The order and knot locations of the spline are specified via the options `f_order` and `f_knots` in `control_saem()`.
+## Amplitude component
 
-## Warping function
+The base shape, $f$, is either a known function or modelled as a spline that is to be estimated. The amplitude random effect, $(a_{i,sh}, a_{i,sc})$, is Gaussian with mean $(\mu_{sh}, \mu_{sc})$ and variance-covariance matrix $\Sigma$.
 
-The warping function is modelled using B-spline basis,
+The fixed base shape version is implemented in `fsim_unimodal()` where $f(t) = -4t(1-t)$.
+
+The unknown base shape version is implemented `fsim_mixed_warped_curves()` where the base shape is modelled using a B-spline. The order and knot locations of the B-spline are specified by the arguments `f_order` and `f_knots` via `control_saem()`.
+
+## Phase component
+
+The warping functions are modelled using B-splines,
 $$h_i(t) = \sum_{k=1}^{K_h} w_{i,k}B_k(t),$$
-where $0\equiv w_{i,1} \leq \cdots \leq w_{i,K_h} \equiv=1$. The first difference of the random coefficients,
+where $0\equiv w_{i,1} \leq \cdots \leq w_{i,K_h} \equiv 1$. The first difference of the random coefficients,
 $(w_{i,2}, w_{i,3}-w_{i,2}, \ldots, 1-w_{i,K_h-1}),$
 follows a Dirichlet distribution whose mean is fixed such that $E(h_i(t))=t$.
 
-The order and knot locations of the spline can be specified via the options `h_order` and `h_knots` in `control_saem()`, which is also used to construct a list of control arguments for the MCMC and SAEM algorithms.
+The order and knot locations of the B-splines are specified by the arguments `h_order` and `h_knots` via `control_saem()`.
 
-# Example 1: Curve registration
+
+# Usage
+This package comes with a simulated dataset, `data_ex1`, of 50 curves observed on 101 equally spaced time points.
+
 ```{r example-1-data, fig.width=4, fig.show='hold'}
-# set.seed(0)
-# kappa0 <- matrix(c(1,2,3,2,1) / 9, nrow=1)
-# ## Hack to sim sinusoidal curve
-# data_ex1 <-
-#   sim_warping_mixture(n = 50, ni = 101, p = 1,
-#                       kappa = kappa0, tau = 10,
-#                       sd_sh = 50, sd_sc = 100,
-#                       sd_err = 10,
-#                       shape_a = 2, shape_b = 2)
-# data_ex1$y1 = sin(data_ex1$warped_x*2*pi) + sin(data_ex1$warped_x*4*pi)
-# data_ex1$y2 = data_ex1$sh + data_ex1$sc * data_ex1$y1
-# data_ex1$resid = data_ex1$y - (data_ex1$sh + data_ex1$sc * data_ex1$y0)
-# data_ex1$y = data_ex1$y2 + data_ex1$resid
-# data_ex1$y0 = data_ex1$y2
-# data_ex1$y1 <- data_ex1$y2 <- data_ex1$resid <- NULL
-# save(data_ex1, file = "data/example-data-1.rda")
-# load("data/example-data-1.rda")
+library(mixedWarpedCurves2)
 
+## Plot base shape
+data_ex1 %>%
+  dplyr::filter(id=="1") %>%
+  ggplot() + 
+  geom_line(aes(x=warped_x, y=(y0 - sh)/sc)) + 
+  labs(x="Time, t", y=expression(paste("Base shape, ", f(t))))
 
+## Plot observed curves
 ggplot(data_ex1) + 
-  geom_line(aes(x=x, y=y, col=id), show.legend = F) + 
-  labs(x="Time, t", y=expression(paste("Observed curve, ", y[i](t))))
+  geom_line(aes(x=x, y=y, col=id), size=0.5, show.legend = F) + 
+  labs(x=expression(paste("Time, ", t[ij])), 
+       y=expression(paste("Observed curve, ", y[ij])))
 
+## Plot underlying amplitude functions
+ggplot(data_ex1) + 
+  geom_line(aes(x=warped_x, y=y0, col=id), show.legend = F) + 
+  labs(x="Time, t", y=expression(paste("Amplitude function, ", f[i](t))))
+
+## Plot underlying warping functions
 ggplot(data_ex1) + 
   geom_line(aes(x=x, y=warped_x, col=id), show.legend = F) + 
   labs(x="Time, t", 
        y=expression(paste("Warping function, ", h[i](t))))
 ```
+The figures above show the base shape (top left), the observe curves (top right), the amplitude functions, $f_i$, (bottom left) and the warping functions, $h_i$, (bottom right).
 
-## Estimate model parameters and warping functions by SAEM
-```{r example-1-saem, echo=TRUE, cache=FALSE}
-out <- fsim_mixed_warped_curves(
+Calling fsim() to fit the model by maximum likelihood via a stochastic approximation expectation-maximization (SAEM) algorithm:
+```{r example-1-saem, cache=FALSE}
+out <- fsim(
   y = data_ex1$y,
   obs_time = data_ex1$x,
   curve_id = data_ex1$id,
@@ -106,9 +127,19 @@ out <- fsim_mixed_warped_curves(
     h_knots = seq(0, 1, length=5),
     f_knots = seq(0, 1, length=7)
   ))
-
 ```
 
+
+The returned objects has the following components:
+```{r str-out}
+names(out)
+```
+See documentation in R for details of the output:
+```
+help(fsim)
+```
+
+The fitted curves and the warping functions can be extract by:
 ```{r example-1-output}
 out_df <- ldply(out$curves, function(crv){
   data.frame(
@@ -121,8 +152,9 @@ out_df <- ldply(out$curves, function(crv){
 })
 ```
 
-## Fitted curves and registered curves
+The figures below shows the fitted curves (left) and the registered curves (right).
 ```{r example-1-plots, fig.width=4, fig.show='hold'}
+## Plot fitted curves
 ggplot(out_df) + 
   geom_line(aes(x=x, y=y, group=id), size=0.3) + 
   geom_line(aes(x=x, y=fitted_y, col=id), 
@@ -130,6 +162,7 @@ ggplot(out_df) +
   labs(x="Time, t", 
        y=expression(paste("Fitted curve, ", hat(y)[i](t))))
 
+## Plot registered curves
 ggplot(out_df) + 
   geom_line(aes(x=warped_x, y=y, col=id),
             show.legend = F) + 
@@ -137,6 +170,7 @@ ggplot(out_df) +
        y=expression(y[i](t)))
 ```
 
+The sequences of estimated parameters are returned in the pars_track component. The figure below shows the estimated error variances as a simple convergence diagnostics:
 ```{r example-1-tracks, fig.width=12}
 sigma2_track <- out$pars_track$sigma2_track
 qplot(x=seq(along=sigma2_track),
@@ -146,189 +180,6 @@ qplot(x=seq(along=sigma2_track),
        y=expression(paste("Estimated ", sigma[epsilon]^2))) + 
   coord_cartesian(ylim=c(sigma2_track[50], min(sigma2_track)))
   
-```
-
-# Example 2: Clustering on phase variation
-```{r example-2-data, fig.width=4, fig.show='hold'}
-# set.seed(0)
-# # Simulate curves with a mixture of warping
-# kappa1 <- c(1,5,5,1)
-# kappa1 <- kappa1 / sum(kappa1)
-# kappa2 <- c(5,1,1,5)
-# kappa2 <- kappa2 / sum(kappa2)
-# kappa3 <- c(0.5,0.5,2.5,2.5)
-# kappa3 <- kappa3 / sum(kappa3)
-# kappa4 <- c(2.5,2.5,0.5,0.5)
-# kappa4 <- kappa4 / sum(kappa4)
-# data_ex2 <-
-#   sim_warping_mixture(n = 200, ni = 41, p = rep(1/4, 4),
-#                       kappa = rbind(kappa1,
-#                                     kappa2,
-#                                     kappa3,
-#                                     kappa4),
-#                       tau = 20,
-#                       sd_sh = 100, sd_sc = 100,
-#                       sd_err = 30,
-#                       shape_a = 2, shape_b = 2)
-# save(data_ex2, file = "data/example-data-2.rda")
-# load("data/example-data-2.rda")
-
-ggplot(data_ex2) + 
-  geom_line(aes(x=x, y=y, group=id, col=clust), 
-            show.legend = F, size=0.3) + 
-  labs(x="Time, t", 
-       y=expression(paste("Observed curve, ", y[i](t))),
-       color="Cluster")
-
-ggplot(data_ex2) + 
-  geom_line(aes(x=x, y=warped_x, group=id, col=clust), 
-            show.legend = T, size=0.3) + 
-  labs(x="Time, t", 
-       y=expression(paste("Warping function, ", h[i](t))),
-       color="Cluster")
-```
-
-## Fit mixture of warping function by SAEM
-### Known unimodal shape
-```{r example-2-saem-unimodal, echo=TRUE, message=FALSE, cache=FALSE}
-clust_out <- fsim_unimodal(
-  y = data_ex2$y,
-  obs_time = data_ex2$x,
-  curve_id = data_ex2$id,
-  n_clust = 4,
-  saem_control = control_saem(
-    n_saem_iter = 2000,
-    n_saem_burn = 200,
-    n_mcmc_burn = 5,
-    h_knots = seq(0, 1, length=5)
-  ))
-
-```
-
-```{r example-2-saem-unimodal-output}
-clust_out_df <- ldply(clust_out$curves, function(crv){
-  data.frame(
-    id = as.character(c(crv$curve_id+1)),
-    x = c(crv$x),
-    y = c(crv$y),
-    estimated_warped_x = c(crv$warped_x),
-    fitted_y = c(crv$fitted_y),
-    pred_clust = as.character(which.max(crv$sapprox_cluster_membership))
-  )
-}) %>%
-  dplyr::inner_join(., select(data_ex2, id, x, clust, warped_x), by=c("id", "x")) %>%
-  mutate(clust = letters[clust])
-```
-
-### Unknown base shape
-```{r example-2-saem-flexShape, echo=TRUE, message=FALSE, cache=FALSE}
-flex_clust_out <- fsim_mixed_warped_curves(
-  y = data_ex2$y,
-  obs_time = data_ex2$x,
-  curve_id = data_ex2$id,
-  n_clust = 4,
-  saem_control = control_saem(
-    n_saem_iter = 2000,
-    n_saem_burn = 200,
-    n_mcmc_burn = 5,
-    h_knots = seq(0, 1, length=7),
-    f_knots = seq(0, 1, length=3)
-  ))
-```
-
-```{r example-2-saem-flexShape-output}
-flex_clust_out_df <- ldply(flex_clust_out$curves, function(crv){
-  data.frame(
-    id = as.character(c(crv$curve_id+1)),
-    x = c(crv$x),
-    y = c(crv$y),
-    estimated_warped_x = c(crv$warped_x),
-    fitted_y = c(crv$fitted_y),
-    pred_clust = as.character(which.max(crv$sapprox_cluster_membership))
-  )
-}) %>%
-  dplyr::inner_join(., select(data_ex2, id, x, clust, warped_x), by=c("id", "x")) %>%
-  mutate(clust = letters[clust])
-```
-
-```{r example-2-tab, include=FALSE}
-true_clust <- data_ex2[data_ex2$x==0, "clust"]
-pred_clust <- sapply(clust_out$curves,
-                  function(crv){
-                    which.max(crv$sapprox_cluster_membership)
-                    })
-flex_pred_clust <- sapply(flex_clust_out$curves,
-                          function(crv){
-                            which.max(crv$sapprox_cluster_membership)
-                          })
-table(true_clust, pred_clust)
-mclust::adjustedRandIndex(true_clust, pred_clust)
-table(true_clust, flex_pred_clust)
-mclust::adjustedRandIndex(true_clust, flex_pred_clust)
-```
-
-## Fitted curves and clustering on phase variation
-### Known unimodal shape
-```{r example-2-unimodal-plots}
-ggplot(clust_out_df) + 
-  geom_line(aes(x=x, y=fitted_y, group=id), 
-            size=0.3, show.legend = F) + 
-  geom_line(aes(x=x, y=y, group=id, col=pred_clust), 
-            size=0.3, show.legend = F) + 
-  facet_grid(clust~pred_clust) +
-  labs(x="Time, t", 
-       y=expression(paste("Fitted curve, ", hat(y)[i](t))))
-
-
-ggplot(clust_out_df) + 
-  geom_line(aes(x=x, y=warped_x, group=id), 
-            size=0.3, show.legend = F) + 
-  geom_line(aes(x=x, y=estimated_warped_x, group=id, col=pred_clust), 
-            size=0.3, show.legend = F) + 
-  facet_grid(clust~pred_clust) +
-  labs(x="Time, t", 
-       y=expression(paste("Warping Function, ", hat(h)[i](t))))
-
-
-sigma2_track <- clust_out$pars_track$sigma2_track
-qplot(x=seq(along=sigma2_track),
-      y=sigma2_track, 
-      geom="line") + 
-  labs(x="Iterations", 
-       y=expression(paste("Estimated ", sigma[epsilon]^2))) + 
-  coord_cartesian(ylim=c(sigma2_track[40], min(sigma2_track)))
-  
-```
-
-### Unknown base shape
-```{r example-2-flexShape-plots}
-ggplot(flex_clust_out_df) + 
-  geom_line(aes(x=x, y=fitted_y, group=id), 
-            size=0.3, show.legend = F) + 
-  geom_line(aes(x=x, y=y, group=id, col=pred_clust), 
-            size=0.3, show.legend = F) + 
-  facet_grid(clust~pred_clust) +
-  labs(x="Time, t", 
-       y=expression(paste("Fitted curve, ", hat(y)[i](t))))
-
-
-ggplot(flex_clust_out_df) + 
-  geom_line(aes(x=x, y=warped_x, group=id), 
-            size=0.3, show.legend = F) + 
-  geom_line(aes(x=x, y=estimated_warped_x, group=id, col=pred_clust), 
-            size=0.3, show.legend = F) + 
-  facet_grid(clust~pred_clust) +
-  labs(x="Time, t", 
-       y=expression(paste("Warping Function, ", hat(h)[i](t))))
-
-
-sigma2_track <- flex_clust_out$pars_track$sigma2_track
-qplot(x=seq(along=sigma2_track),
-      y=sigma2_track, 
-      geom="line") + 
-  labs(x="Iterations", 
-       y=expression(paste("Estimated ", sigma[epsilon]^2))) + 
-  coord_cartesian(ylim=c(max(sigma2_track[100:1000]), min(sigma2_track)))
 ```
 
 # Reference
