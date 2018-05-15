@@ -21,3 +21,6 @@ fit_mixed_shape(y, x = NULL, nCat = 9, nIter = 100, plot.est = FALSE)
 This function fits the mixture of shape model using the EM algorithm
 described in Brillinger and Stewart (1997).
 }
+\references{
+Brillinger, D. R. and Stewart, B. S. (1997). Elephant seal movements: dive types and their sequences. In Modelling Longitudinal and Spatially Correlated Data (pp. 275–288). Springer.
+}

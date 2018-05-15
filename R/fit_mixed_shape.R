@@ -7,6 +7,7 @@
 #' @param nCat integer, number of dive categories
 #' @param nIter integer, number of maximum EM iterations
 #' @param plot.est if TRUE, plot estimated shapes
+#' @references Brillinger, D. R. and Stewart, B. S. (1997). Elephant seal movements: dive types and their sequences. In Modelling Longitudinal and Spatially Correlated Data (pp. 275–288). Springer.
 #' @importFrom graphics matplot
 fit_mixed_shape <- function(y, x=NULL, nCat=9, nIter=100, plot.est=FALSE){
   y_max <- max(abs(y))

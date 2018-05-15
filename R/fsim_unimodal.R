@@ -1,9 +1,13 @@
-#' Fitting shape-invariant model with flexible time transformations
+#' Model-based curve registration and clustering  with a known unimodal template
 #'
-#' This function fits the model \deqn{Y_i(t) = a_{i,sh} + a_{i,sc} f \circ h_i(y)}
-#' by maximum likelihood via a stochastic approximation EM algorithm. In the model,
+#' This function fits the model \deqn{Y_i(t) = a_{i,sh} + a_{i,sc} f \circ h_i(y) + error}
+#' by maximum likelihood via a stochastic approximation (SA) EM algorithm. In the model,
 #' $f$ is a B-spline representing a common shape whereas \eqn{h_i:[0, 1] \to [0, 1]}
-#' is a monotone B-spline representing a random time transformation
+#' is a monotone B-spline representing a random time transformation, referred to as a
+#' warping function or registration function. The vector of (warping) coefficients of $h_i$
+#' follows a Dirichlet distributions. The function also supports a finite mixture of
+#' Dirichlet distributions for the warping coefficient for simultaneous curve clustering and
+#' registration.
 #' @param y vector of observed curves
 #' @param obs_time vector of the observation times
 #' @param curve_id vector of curve IDs
@@ -38,10 +42,11 @@
 #'   }
 #'   \item{aux}{List of auxiliary information and intermediate variables for MCMC-SAEM}
 #'   \item{pars_track}{Sequence of estimated parameters for convergence diagnostics}
-#'   \item{se_info}{(Experimental!!) Stochastic approximation to Fishers information matrix}
+#'   \item{se_info}{Not currently implemented}
 #'   \item{y_scaling_factor}{Maximum absolute value of the observed curve}
 #' }
-#' #' @importFrom splines splineDesign
+#' @references Fu, E. and Heckman, N. (2017). Model-based curve registration via stochastic approximation EM algorithm. https://arxiv.org/abs/1712.07265
+#' @importFrom splines splineDesign
 #' @useDynLib mixedWarpedCurves2
 #' @export
 fsim_unimodal <- function(y,

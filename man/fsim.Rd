@@ -2,7 +2,7 @@
 % Please edit documentation in R/fsim.R
 \name{fsim}
 \alias{fsim}
-\title{Fitting shape-invariant model with flexible time transformations}
+\title{Model-based curve registration with unknown base shape}
 \usage{
 fsim(y, obs_time, curve_id, n_clust = 1, saem_control = control_saem(),
   trace = FALSE)
@@ -58,8 +58,13 @@ fsim(y, obs_time, curve_id, n_clust = 1, saem_control = control_saem(),
 }
 }
 \description{
-This function fits the model \deqn{Y_i(t) = a_{i,sh} + a_{i,sc} f \circ h_i(y)}
-by maximum likelihood via a stochastic approximation EM algorithm. In the model,
+This function fits the model \deqn{Y_i(t) = a_{i,sh} + a_{i,sc} f \circ h_i(y) + error}
+by maximum likelihood via a stochastic approximation (SA) EM algorithm. In the model,
 $f$ is a B-spline representing a common shape whereas \eqn{h_i:[0, 1] \to [0, 1]}
-is a monotone B-spline representing a random time transformation
+is a monotone B-spline representing a random time transformation, referred to as a
+warping function or registration function. The vector of coefficients of $h_i$ follows a
+Dirichlet distributions.
+}
+\references{
+Fu, E. and Heckman, N. (2017). Model-based curve registration via stochastic approximation EM algorithm. https://arxiv.org/abs/1712.07265
 }

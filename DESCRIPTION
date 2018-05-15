@@ -4,10 +4,7 @@ Title: Mixture model for clustering of warped curves
 Version: 2.0.1
 Author: Eric Fu <ericfu@stat.ubc.ca>
 Maintainer: Eric Fu <ericfu@stat.ubc.ca>
-Description: Simultaneous clustering and curve registration by a mixutre of
-    flexible nonlinear mixed-effect models. This package implemented
-    a stochastic approximation EM (SAEM) for maximum likelihood
-    estiamation of the mixture model.
+Description: Simultaneous clustering and curve registration by a mixutre of flexible nonlinear mixed-effect models. This package implemented a stochastic approximation EM (SAEM) for maximum likelihood estiamation of the mixture model.
 License: GPL-2 | GPL-3
 LazyData: TRUE
 LazyLoad: yes

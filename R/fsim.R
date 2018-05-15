@@ -1,9 +1,11 @@
-#' Fitting shape-invariant model with flexible time transformations
+#' Model-based curve registration with unknown base shape
 #'
-#' This function fits the model \deqn{Y_i(t) = a_{i,sh} + a_{i,sc} f \circ h_i(y)}
-#' by maximum likelihood via a stochastic approximation EM algorithm. In the model,
+#' This function fits the model \deqn{Y_i(t) = a_{i,sh} + a_{i,sc} f \circ h_i(y) + error}
+#' by maximum likelihood via a stochastic approximation (SA) EM algorithm. In the model,
 #' $f$ is a B-spline representing a common shape whereas \eqn{h_i:[0, 1] \to [0, 1]}
-#' is a monotone B-spline representing a random time transformation
+#' is a monotone B-spline representing a random time transformation, referred to as a
+#' warping function or registration function. The vector of coefficients of $h_i$ follows a
+#' Dirichlet distributions.
 #' @param y vector of observed curves at times obs_time
 #' @param obs_time vector of the observation times
 #' @param curve_id vector of curve IDs
@@ -45,6 +47,7 @@
 #'   \item{se_info}{(Experimental!!) Stochastic approximation to Fishers information matrix}
 #'   \item{y_scaling_factor}{Maximum absolute value of the observed curve}
 #' }
+#' @references Fu, E. and Heckman, N. (2017). Model-based curve registration via stochastic approximation EM algorithm. https://arxiv.org/abs/1712.07265
 #' @useDynLib mixedWarpedCurves2
 #' @importFrom splines splineDesign
 #' @export

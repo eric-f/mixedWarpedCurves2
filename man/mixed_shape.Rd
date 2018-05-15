@@ -19,5 +19,9 @@ mixed_shape(y, x = NULL, nCat = 9, nIter = 100, nTry = 10)
 }
 \description{
 This function fits the mixture of shape model using the EM algorithm
-described in Brillinger and Stewart (1997).
+described in Brillinger and Stewart (1997). This is a multi-try
+version of fit_mixed_shape()
+}
+\references{
+Brillinger, D. R. and Stewart, B. S. (1997). Elephant seal movements: dive types and their sequences. In Modelling Longitudinal and Spatially Correlated Data (pp. 275–288). Springer.
 }

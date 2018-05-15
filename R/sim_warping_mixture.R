@@ -4,6 +4,7 @@
 #' @param x numeric vector between 0 and 1 where the function is evaluated
 #' @param a non-negative parameters of the Beta distribution
 #' @import stats
+#' @noRd
 base_shape <- function(x, a=2){
   -dbeta(x, a, a) / dbeta(0.5, a, a)
 }
@@ -15,6 +16,7 @@ base_shape <- function(x, a=2){
 #' @param a non-negative parameters of the Beta distribution
 #' @param b non-negative parameters of the Beta distribution
 #' @import stats
+#' @noRd
 beta_shape <- function(x, a=2, b=3){
   -dbeta(x, a, b) / dbeta((a-1)/(a+b-2), a, b)
 }
