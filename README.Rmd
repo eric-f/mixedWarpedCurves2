@@ -113,7 +113,7 @@ ggplot(data_ex1) +
 ```
 The figures above show the base shape (top left), the observe curves (top right), the amplitude functions, $f_i$, (bottom left) and the warping functions, $h_i$, (bottom right).
 
-Calling `fsim()` to fit the model by maximum likelihood via a stochastic approximation expectation-maximization (SAEM) algorithm:
+Call `fsim()` to fit the model by maximum likelihood via a stochastic approximation expectation-maximization (SAEM) algorithm:
 ```{r example-1-saem, cache=FALSE}
 out <- fsim(
   y = data_ex1$y,
