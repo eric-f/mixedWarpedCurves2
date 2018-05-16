@@ -73,6 +73,9 @@ This package comes with a simulated dataset, `data_ex1`, of 50 curves observed o
 
 ``` r
 library(mixedWarpedCurves2)
+library(ggplot2)
+library(plyr)
+library(dplyr)
 
 ## Plot base shape
 data_ex1 %>%

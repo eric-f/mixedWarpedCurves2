@@ -79,7 +79,7 @@ The order and knot locations of the B-splines are specified by the arguments `h_
 # Usage
 This package comes with a simulated dataset, `data_ex1`, of 50 curves observed on 101 equally spaced time points.
 
-```{r example-1-data, fig.width=4, fig.show='hold'}
+```{r example-1-data, fig.width=4, fig.show='hold', message=FALSE}
 library(mixedWarpedCurves2)
 library(ggplot2)
 library(plyr)
