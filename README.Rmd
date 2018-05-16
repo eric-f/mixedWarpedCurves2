@@ -13,11 +13,6 @@ output:
 knitr::opts_chunk$set(
   echo = TRUE, 
   fig.path = "man/figures/README-")
-library(mixedWarpedCurves2)
-library(gtools)
-library(ggplot2)
-library(plyr)
-library(dplyr)
 ```
 
 # Dependencies
@@ -86,6 +81,9 @@ This package comes with a simulated dataset, `data_ex1`, of 50 curves observed o
 
 ```{r example-1-data, fig.width=4, fig.show='hold'}
 library(mixedWarpedCurves2)
+library(ggplot2)
+library(plyr)
+library(dplyr)
 
 ## Plot base shape
 data_ex1 %>%
